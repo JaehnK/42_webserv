@@ -1,8 +1,10 @@
 #include "webserv.hpp"
 
-int main(int ac, char **av)
+int main()
 {
-    ServerManager serverManager();
+    ServerManager serverManager;
+
+    serverManager = ServerManager();
 
     return 0;
 }

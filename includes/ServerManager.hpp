@@ -3,6 +3,7 @@
 class ServerManager
 {
     private:
+        Config  conf;
         
     public:
         ServerManager();
