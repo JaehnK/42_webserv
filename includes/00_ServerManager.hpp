@@ -1,4 +1,7 @@
 #pragma once
+#include "webserv.hpp"
+
+class Config;
 
 class ServerManager
 {
@@ -10,6 +13,9 @@ class ServerManager
         ServerManager(const ServerManager &rhs);
         ServerManager &operator =(const ServerManager &rhs);
         ~ServerManager();
+
+        int     setConfig(char *fileName);
+        int     setConfig();
 
 };
 

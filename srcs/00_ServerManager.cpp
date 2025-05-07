@@ -23,3 +23,14 @@ ServerManager::~ServerManager()
 {
 
 }
+
+int    ServerManager::setConfig(char *fileName)
+{
+    fileName = NULL;
+    return (0);
+}
+
+int     ServerManager::defaultConfig()
+{
+    return (0);
+}

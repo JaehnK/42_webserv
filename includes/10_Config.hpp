@@ -1,6 +1,8 @@
 #pragma once
 #include "webserv.hpp"
 
+class ConfigBlock;
+
 enum ConfigState
 {
     INIT,
@@ -15,8 +17,11 @@ enum ConfigState
 class Config
 {
     private:
-        /* data */
+        ConfigBlock    rootBlock;
+
     public:
         Config();
+        Config(Config &rhs);
+        Config&         operator=(Config &rhs);
         ~Config();
 };
