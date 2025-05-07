@@ -6,7 +6,9 @@ class ServerManager
         
     public:
         ServerManager();
+        ServerManager(const ServerManager &rhs);
+        ServerManager &operator =(const ServerManager &rhs);
         ~ServerManager();
-        
+
 };
 
