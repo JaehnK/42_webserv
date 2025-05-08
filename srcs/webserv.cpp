@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     if (argc > 1)
         serverManager.setConfig(argv[1]);
     else
-        serverManager.defaultConfig();
+        serverManager.setConfig();
     
     return (0);
 }

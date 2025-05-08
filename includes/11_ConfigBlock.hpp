@@ -10,8 +10,8 @@ class ConfigBlock
         std::vector<ConfigDirective>    _directives;
         std::vector<ConfigBlock>        _blocks;
         
-        ConfigBlock();
     public:
+        ConfigBlock();
         ConfigBlock(const std::string& name);
         ConfigBlock(const ConfigBlock& rhs);
         ConfigBlock& operator=(const ConfigBlock& rhs);
@@ -25,14 +25,14 @@ class ConfigBlock
         std::vector<ConfigDirective>   getDirectives() const;
         std::vector<ConfigBlock>       getBlocks() const;
 
-        const ConfigDirective&       searchDirective(const std::string& dirKey) const;
+        const ConfigDirective&      searchDirective(const std::string& dirKey) const;
         const ConfigBlock&          searchBlock(const std::string blkName) const;
         
         std::vector<std::string>    getDirectiveList() const;
         std::vector<std::string>    getBlockList() const;
 
-        int directiveLen();
-        int blockLen();
+        int directiveLen() const;
+        int blockLen() const;
 
         class OutOfBoundaryException: public std::exception
         {

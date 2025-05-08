@@ -26,11 +26,11 @@ ServerManager::~ServerManager()
 
 int    ServerManager::setConfig(char *fileName)
 {
-    fileName = NULL;
+    this->conf = Config(fileName);
     return (0);
 }
 
-int     ServerManager::defaultConfig()
+int    ServerManager::setConfig()
 {
     return (0);
 }

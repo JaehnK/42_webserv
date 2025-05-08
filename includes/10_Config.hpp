@@ -25,8 +25,8 @@ class Config
     public:
         Config();
         Config(char *fileName);
-        Config(Config &rhs);
-        Config&         operator=(Config &rhs);
+        Config(const Config &rhs);
+        Config& operator=(const Config &rhs);
         ~Config();
 
         std::string getName() const;

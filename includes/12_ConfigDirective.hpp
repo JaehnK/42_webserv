@@ -24,8 +24,8 @@ class ConfigDirective
         std::pair<std::string, std::vector<std::string> >   getDirective() const;
 
         // _value의 길이와 인덱스에 해당하는 값을 반환
-        int             len() const;
-        std::string&    operator[](int idx) const;
+        int                 len() const;
+        const std::string&  operator[](int idx) const;
 
 };
 

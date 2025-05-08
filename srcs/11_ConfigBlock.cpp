@@ -64,7 +64,7 @@ std::vector<ConfigBlock>    ConfigBlock::getBlocks() const
 const ConfigDirective&   ConfigBlock::searchDirective(const std::string& dirKey) const
 {
    for (std::vector<ConfigDirective>::const_iterator it = this->_directives.begin() \
-        ; it != this->_directives.end(); i++)
+        ; it != this->_directives.end(); it++)
    {
         if (it->getKey() == dirKey)
             return (*it);
@@ -76,7 +76,7 @@ const ConfigBlock&  ConfigBlock::searchBlock(const std::string blkName) const
 {
 
     for (std::vector<ConfigBlock>::const_iterator it = this->_blocks.begin() \
-        ; it != this->_blocks.end(); i++)
+        ; it != this->_blocks.end(); it++)
     {
         if (it->getName() == blkName)
             return (*it);
@@ -84,20 +84,20 @@ const ConfigBlock&  ConfigBlock::searchBlock(const std::string blkName) const
     throw OutOfBoundaryException();
 }
 
-int ConfigBlock::directiveLen()
+int ConfigBlock::directiveLen() const
 {
     return (this->_directives.size());
 }
 
-int ConfigBlock::blockLen()
+int ConfigBlock::blockLen() const
 {
     return (this->_blocks.size());
 }
 
 std::vector<std::string>    ConfigBlock::getDirectiveList() const
 {
-    std::vector<std::string>                vec;
-    std::vector<ConfigDirective>::iterator  it;
+    std::vector<std::string>                        vec;
+    std::vector<ConfigDirective>::const_iterator    it;
 
     vec = std::vector<std::string> ();
     it = this->_directives.begin();
@@ -112,10 +112,10 @@ std::vector<std::string>    ConfigBlock::getDirectiveList() const
 
 std::vector<std::string>    ConfigBlock::getBlockList() const
 {
-    std::vector<std::string>                vec;
-    std::vector<ConfigBlock>::iterator  it;
+    std::vector<std::string>                    vec;
+    std::vector<ConfigBlock>::const_iterator    it;
 
-    vec = std::vector<std::stirng> ();
+    vec = std::vector<std::string> ();
     it  = this->_blocks.begin();
 
     while (it != this->_blocks.end())
@@ -135,7 +135,7 @@ const char* ConfigBlock::OutOfBoundaryException::what() const throw()
 
 std::ostream& operator<< (std::ostream& os, const ConfigBlock& configBlk)
 {
-    os << "ConfigBlock[" << configBlk.getName << "]: Directives: " << configBlk.directiveLen();
+    os << "ConfigBlock[" << configBlk.getName() << "]: Directives: " << configBlk.directiveLen();
     os << " Blocks: " << configBlk.blockLen() << std::endl;
     return (os);
 }

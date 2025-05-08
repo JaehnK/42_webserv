@@ -39,7 +39,7 @@ void    ConfigDirective::setValue(const std::vector<std::string> vals)
 }
 
 
-void    ConfigDirective::setDirective(const std::pair<std::string, std::vector<std::string>> dir)
+void    ConfigDirective::setDirective(const std::pair<std::string, std::vector<std::string> > dir)
 {
     this->_key = dir.first;
     this->_vals = dir.second;
@@ -70,9 +70,9 @@ int ConfigDirective::len() const
     return (this->_vals.size());
 }
 
-std::string& ConfigDirective::operator[](int idx) const
+const std::string& ConfigDirective::operator[](int idx) const
 {
-    return (this->_vals[idx]);
+    return (this->_vals.at(idx));
 }
 
 std::ostream& operator<< (std::ostream& os, const ConfigDirective& configDir)
@@ -80,7 +80,7 @@ std::ostream& operator<< (std::ostream& os, const ConfigDirective& configDir)
     os << "_Key:" << configDir.getKey() << "Value Count: " << configDir.len() << "\n";
     for (int i = 0; i < configDir.len(); i++)
     {
-        os << i < " : " << configDir[i] << "\n";
+        os << i << " : " << configDir[i] << "\n";
     }
     os << "----------" << std::endl;
     return (os);

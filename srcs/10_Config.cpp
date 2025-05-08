@@ -10,21 +10,22 @@ Config::Config(char *fileName)
 {
     this->_rootBlock = ConfigBlock("root");
     this->_fileName = fileName;
-    parseFile(fileName);
+    parseFile();
 }
 
 Config::Config(const Config &rhs)
 {
-    this = &rhs;
+    *this = rhs;
 }
 
-Config& Config::operator=(Config &rhs)
+Config& Config::operator=(const Config &rhs)
 {
-    if (*this != rhs)
+    if (this != &rhs)
     {
         this->_fileName = rhs.getName();
         this->_rootBlock = rhs.getRootBlock();
     }
+    return (*this);
 }
 
 Config::~Config()
@@ -41,7 +42,10 @@ ConfigBlock Config::getRootBlock() const
     return (this->_rootBlock);
 }
 
-void    Parsefile()
+void    Config::parseFile()
 {
+    std::ifstream ifs;
     
+    ifs.open(this->_fileName.c_str());
+
 }
