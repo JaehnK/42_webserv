@@ -41,3 +41,4 @@ class ConfigBlock
 		};
 };
 
+std::ostream& operator<< (std::ostream& os, const ConfigBlock& configBlk);

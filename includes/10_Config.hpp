@@ -17,11 +17,19 @@ enum ConfigState
 class Config
 {
     private:
-        ConfigBlock    rootBlock;
+        std::string     _fileName;
+        ConfigBlock     _rootBlock;
+
+        void            parseFile();
 
     public:
         Config();
+        Config(char *fileName);
         Config(Config &rhs);
         Config&         operator=(Config &rhs);
         ~Config();
+
+        std::string getName() const;
+        ConfigBlock getRootBlock() const;
+
 };

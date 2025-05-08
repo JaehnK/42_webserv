@@ -33,13 +33,13 @@ void    ConfigDirective::setValue(const std::string val)
     this->_vals.push_back(val);
 }
 
-void    ConfigDirective::setValue(const std::vector<std::string>& vals)
+void    ConfigDirective::setValue(const std::vector<std::string> vals)
 {
     this->_vals.insert(this->_vals.end(), vals.begin(), vals.end());
 }
 
 
-void    ConfigDirective::setDirective(const std::pair<std::string, std::vector<std::string>> &dir)
+void    ConfigDirective::setDirective(const std::pair<std::string, std::vector<std::string>> dir)
 {
     this->_key = dir.first;
     this->_vals = dir.second;

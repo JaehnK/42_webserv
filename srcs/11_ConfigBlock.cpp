@@ -94,7 +94,48 @@ int ConfigBlock::blockLen()
     return (this->_blocks.size());
 }
 
+std::vector<std::string>    ConfigBlock::getDirectiveList() const
+{
+    std::vector<std::string>                vec;
+    std::vector<ConfigDirective>::iterator  it;
+
+    vec = std::vector<std::string> ();
+    it = this->_directives.begin();
+
+    while (it != this->_directives.end())
+    {
+        vec.push_back(it->getKey());
+        it++;
+    }
+    return (vec);
+}
+
+std::vector<std::string>    ConfigBlock::getBlockList() const
+{
+    std::vector<std::string>                vec;
+    std::vector<ConfigBlock>::iterator  it;
+
+    vec = std::vector<std::stirng> ();
+    it  = this->_blocks.begin();
+
+    while (it != this->_blocks.end())
+    {
+        vec.push_back(it->getName());
+        it++;
+    }
+    return (vec);
+}
+
+
 const char* ConfigBlock::OutOfBoundaryException::what() const throw()
 {
     return ("ConfigBlock: Search Failed\n");
+}
+
+
+std::ostream& operator<< (std::ostream& os, const ConfigBlock& configBlk)
+{
+    os << "ConfigBlock[" << configBlk.getName << "]: Directives: " << configBlk.directiveLen();
+    os << " Blocks: " << configBlk.blockLen() << std::endl;
+    return (os);
 }
