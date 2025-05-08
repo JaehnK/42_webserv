@@ -6,21 +6,24 @@ class ConfigDirective;
 class ConfigBlock
 {
     private:
+        int                             _blockLvl;
         std::string                     _name;
         std::vector<ConfigDirective>    _directives;
         std::vector<ConfigBlock>        _blocks;
         
     public:
         ConfigBlock();
-        ConfigBlock(const std::string& name);
+        ConfigBlock(const std::string& name, const int lvl);
         ConfigBlock(const ConfigBlock& rhs);
         ConfigBlock& operator=(const ConfigBlock& rhs);
         ~ConfigBlock();
 
+        void    setBlockLvl(const int lvl);
         void    setName(const std::string& name);
         void    addDirective(const ConfigDirective& dir);
         void    addBlock(const ConfigBlock& block);
 
+        int                            getBlockLvl() const;
         std::string                    getName() const;
         std::vector<ConfigDirective>   getDirectives() const;
         std::vector<ConfigBlock>       getBlocks() const;

@@ -6,7 +6,9 @@ ConfigBlock::ConfigBlock()
     this->_blocks = std::vector<ConfigBlock>();
 }
 
-ConfigBlock::ConfigBlock(const std::string& name): _name(name)
+ConfigBlock::ConfigBlock(const std::string& name, const int lvl)
+    :_blockLvl(lvl), 
+     _name(name)
 {
     this->_directives = std::vector<ConfigDirective>();
     this->_blocks = std::vector<ConfigBlock>();
@@ -31,6 +33,11 @@ ConfigBlock& ConfigBlock::operator=(const ConfigBlock& rhs)
 ConfigBlock::~ConfigBlock()
 {}
 
+void    ConfigBlock::setBlockLvl(const int lvl)
+{
+    this->_blockLvl = lvl;
+}
+
 void    ConfigBlock::setName(const std::string& name)
 {
     this->_name = name;
@@ -44,6 +51,11 @@ void    ConfigBlock::addDirective(const ConfigDirective& dir)
 void    ConfigBlock::addBlock(const ConfigBlock &blk)
 {
     this->_blocks.push_back(blk);
+}
+
+int ConfigBlock::getBlockLvl() const
+{
+    return (this->_blockLvl);
 }
 
 std::string ConfigBlock::getName() const

@@ -20,8 +20,7 @@ class Config
         std::string     _fileName;
         ConfigBlock     _rootBlock;
 
-        void            parseFile();
-
+        void                        parseFile();
     public:
         Config();
         Config(char *fileName);

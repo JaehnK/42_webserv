@@ -34,3 +34,16 @@ int    ServerManager::setConfig()
 {
     return (0);
 }
+
+std::vector<std::string> ServerManager::split(const std::string &s, char delimiter)
+{
+    std::vector<std::string>    tokens;
+    std::string                 token;
+    std::istringstream          tokStream(s);
+
+    while (std::getline(tokStream, token, delimiter))
+    {
+        tokens.push_back(token);
+    }
+    return (tokens);
+}
