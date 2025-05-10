@@ -6,7 +6,7 @@ class ConfigDirective
     private:
         std::string                 _key;
         std::vector<std::string>    _vals;
-    
+        std::vector<ConfigDirective>_directives;
     public:
         
         ConfigDirective();

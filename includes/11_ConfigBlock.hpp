@@ -7,8 +7,10 @@ class ConfigBlock
 {
     private:
         int                             _blockLvl;
-        std::string                     _name;
-        std::vector<ConfigDirective>    _directives;
+        int                             _valSize;
+        int                             _blockSize;
+        std::string                     _key;
+        std::vector<std::string>        _vals;
         std::vector<ConfigBlock>        _blocks;
         
     public:

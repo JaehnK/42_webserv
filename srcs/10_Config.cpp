@@ -31,7 +31,6 @@ Config& Config::operator=(const Config &rhs)
 Config::~Config()
 {}
 
-
 std::string Config::getName() const
 {
     return (this->_fileName);
@@ -53,11 +52,21 @@ void    Config::parseFile()
     ifs.open(this->_fileName.c_str());
     while (std::getline(ifs, buf))
     {
-        std::cout << buf << std::endl;
-        size_t annotPos = buf.find("#");
-        if (annotPos != std::string::npos)
-            std::cout << "Remove annotation: " << buf.substr(buf.size() - annotPos - 1) << std::endl;
-
+        // std::cout << buf << std::endl;
+        // size_t annotPos = buf.find("#");
+        // if (annotPos != std::string::npos)
+        //     std::cout << "Remove annotation: " << annotPos << " "<< buf.substr(annotPos + 1) << std::endl;
+    
+        std::string::iterator it = buf.begin();
+        size_t indentPos = 0;
+        while (it != buf.end())
+        {
+            if (*it != '\t' && *it !=' ')
+                break ;
+            indentPos++;
+            it++;
+        }
+            std::cout << buf.substr(indentPos, buf.size()) << std::endl;
     }
     ifs.close();
 
