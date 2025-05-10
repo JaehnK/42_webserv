@@ -66,7 +66,8 @@ void    Config::parseFile()
             indentPos++;
             it++;
         }
-            std::cout << buf.substr(indentPos, buf.size()) << std::endl;
+        std::cout << buf.substr(indentPos, buf.size()) << std::endl;
+        buf.find_first_not_of
     }
     ifs.close();
 
