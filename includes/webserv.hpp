@@ -18,6 +18,10 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "12-4_LocationCGI.hpp"
+#include "12-3_LocationUpload.hpp"
+#include "12-2_LocationDownload.hpp"
+#include "12-1_LocationAPI.hpp"
 #include "12_Location.hpp"
 #include "11_Server.hpp"
 #include "10_Config.hpp"

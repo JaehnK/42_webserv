@@ -1,0 +1,46 @@
+#include "webserv.hpp"
+
+LocationAPI::LocationAPI()
+{
+    this->_return = std::vector<std::map<int, std::string> > ();
+}
+
+LocationAPI::LocationAPI(const LocationAPI& rhs): Location(rhs)
+{
+    this = &rhs;
+}
+
+LocationAPI&    LocationAPI::operator=(const LocationAPI& rhs)
+{
+    if (*this != rhs)
+    {
+        Location::operator=(rhs);
+        this->_return = rhs.getReturn();
+    }
+}
+
+LocationAPI::~LocationAPI()
+{
+
+}
+
+void    LocationAPI::addReturn(std::map<int, std::string> ret)
+{
+    this->_return.push_back(ret);
+}
+
+std::vector<std::map<int, std::string> >    LocationAPI::getReturn() const
+{
+    if (this->hasReturn() == false)
+        throw DataNotFoundException();
+    return (this->_return);
+}
+
+void    LocationAPI::hasReturn() const
+{
+    if (this->_return.size() == 0)
+        return (false);
+    return (true);
+}
+
+

@@ -1,3 +1,5 @@
+#pragma once
+#include "webserv.hpp"
 
 class LocationAPI: public Location
 {
@@ -5,7 +7,13 @@ class LocationAPI: public Location
         std::vector<std::map<int, std::string> > _return;
 
     public:
-        Location(/* args */);
+        LocationAPI();
+        LocationAPI(const LocationAPI& rhs);
+        LocationAPI&    operator=(const LocationAPI& rhs);
+        ~LocationAPI();
 
-        ~Location();
+        void                                        addReturn(std::map<int, std::string> ret);
+        std::vector<std::map<int, std::string> >    getReturn() const;
+        void                                        hasReturn() const;
+
 };
