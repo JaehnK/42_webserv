@@ -8,23 +8,41 @@ class Server:
         int                                         _port;
         std::string                                 _listen;
         std::string                                 _root;
-        std::string                                 _serverName;
-        std::vector<std::map<int, std::string> >    _errorPage;
-        std::vector<Location>                       _location;
+        std::vector<std::map<int, std::string> >    _errorPages;
+        std::vector<Location>                       _locations;
         
     public:
         Server();
-        Server(const Server &rhs);
-        Server& operator=(const Server &rhs);
+        Server(const Server& rhs);
+        Server& operator=(const Server& rhs);
         ~Server();
 
-        void    setName(std::string name);
-        void    setHost(std::string host);
+        // Setters
+        void    setName(const std::string& name);
+        void    setHost(const std::string& host);
         void    setPort(int port);
-        void    setListen(std::string listen);
-        void    setRoot(std::string root);
-        void    setServerName
-        
+        void    setListen(const std::string& listen);
+        void    setRoot(const std::string& root);
+        void    addErrorPage(const std::map<int, std::string>& errPage);
+        void    addLocation(const Location& location);
+
+        // Getters
+        std::string                                 getName() const;
+        std::string                                 getHost() const;
+        int                                         getPort() const;
+        std::string                                 getListen() const;
+        std::string                                 getRoot() const;
+        std::vector<std::map<int, std::string> >    getErrorPages() const;
+        std::vector<Location>                       getLocations() const;
+
+        // Checkers
+        bool    hasName() const;
+        bool    hasHost() const;
+        bool    hasPort() const;
+        bool    hasListen() const;
+        bool    hasRoot() const;
+        bool    hasErrorPages() const;
+        bool    hasLocations() const;
 };
 
 std::ostream	&operator<<(std::ostream& os, const Server& serv);
