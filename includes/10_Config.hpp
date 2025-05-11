@@ -17,10 +17,12 @@ class Config
         Config& operator=(const Config &rhs);
         ~Config();
 
+        // Setters
         void    setFileName(std::string fileName);
         void    setClientMaxBodySize(int clientMaxBodySize);
         void    addServer(Server server);
         
+        // Getters
         std::string         getFileName() const;
         int                 getClientMaxBodySize() const;
         std::vector<Server> getServers() const;

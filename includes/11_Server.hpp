@@ -43,6 +43,12 @@ class Server:
         bool    hasRoot() const;
         bool    hasErrorPages() const;
         bool    hasLocations() const;
+
+        class DataNotFoundException: public std::exception
+        {
+            public:
+                const char* what(void) const throw();
+        }
 };
 
 std::ostream	&operator<<(std::ostream& os, const Server& serv);

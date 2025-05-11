@@ -5,17 +5,24 @@ class Location
 {
     protected:
         std::string                             _path;
-        
         int                                     _clientMaxBodySize;
         std::string                             _root;
         std::vector<std::string>                _index;
         std::vector<std::string>                _limitExcept;
         std::vector<std::map<int, std::string>  _errorPage;
-
-        bool            _denyAll;
+        bool                                    _denyAll;
+    
     public:
-        Location( );
-        ~Location( );
+        Location();
+        Location(const Location& rhs);
+        Location&   operator=(const Location& rhs);
+        ~Location();
+
+        // Setters
+        void    setPath(std::string path);
+        void    setClientMaxBodySize(int cmbs);
+        void    setRoot(std::string root);
+
 };
 
 

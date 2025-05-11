@@ -58,36 +58,50 @@ void    Server::addLocation(const Location& location)
 
 std::string Server::getName() const
 {
+    if (this->hasName() == false)
+        throw DataNotFoundException();
     return (this->_name);
 }
 
 std::string Server::getHost() const
 {
+    if (this->hasHost() == false)
+        throw DataNotFoundException();
     return (this->_host);
 }
 
 int Server::getPort() const
 {
+    if (this->hasPort() == false)
+        throw DataNotFoundException();
     return (this->_port);
 }
 
 std::string Server::getListen() const
 {
+    if (this->hasListen() == false)
+        throw DataNotFoundException();
     return (this->_listen);
 }
 
 std::string Server::getRoot() const
 {
+    if (this->hasRoot() == false)
+        throw DataNotFoundException();
     return (this->_root);
 }
 
 std::vector<std::map<int, std::string> >    Server::getErrorPages() const
 {
+    if (this->hasErrorPages() == false)
+    t   hrow DataNotFoundException(); 
     return (this->_errorPages);
 }
 
 std::vector<Location>   Server::getLocations() const
 {
+    if (this->hasLocations() == false)
+        throw DataNotFoundException();
     return (this->_locations);
 }
 
@@ -140,4 +154,7 @@ bool    Server::hasLocations() const
     return (true);
 }
 
-
+const char* Server::DataNotFoundException::what() const throw()
+{
+    return ("Data does not exist.");
+}
