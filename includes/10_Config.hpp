@@ -6,7 +6,7 @@ class Config
     private:
         std::string             _fileName;
         int                     _clientMaxBodySize;
-        std::vector<Server>     _server;
+        std::vector<Server>     _servers;
 
         void                    parseFile();
 
@@ -15,11 +15,15 @@ class Config
         Config(char *fileName);
         Config(const Config &rhs);
         Config& operator=(const Config &rhs);
-
-        void    setClientMaxBodySize();
-        int     getClientMaxBodySize();
-
         ~Config();
 
-        std::string getName() const;
+        void    setFileName(std::string fileName);
+        void    setClientMaxBodySize(int clientMaxBodySize);
+        void    addServer(Server server);
+        
+        std::string         getFileName() const;
+        int                 getClientMaxBodySize() const;
+        std::vector<Server> getServers() const;
 };
+
+std::ostream	&operator<<(std::ostream& os, const Config& conf);

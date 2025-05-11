@@ -2,14 +2,17 @@
 
 Config::Config()
 {
-    this->_rootBlock = ConfigBlock("root", 0);
     this->_fileName = "default";
+    this->_clientMaxBodySize = 0;
+    this->_servers = std::vector<Server> ();
 }
 
 Config::Config(char *fileName)
 {
-    this->_rootBlock = ConfigBlock("root", 0);
     this->_fileName = fileName;
+    this->_clientMaxBodySize = 0;
+    this->_servers = std::vector<Server> ();
+
     parseFile();
 }
 
@@ -22,8 +25,9 @@ Config& Config::operator=(const Config &rhs)
 {
     if (this != &rhs)
     {
-        this->_fileName = rhs.getName();
-        this->_rootBlock = rhs.getRootBlock();
+        this->_fileName = rhs.getFileName();
+        this->_clientMaxBodySize = rhs.getClientMaxBodySize();
+        this->_servers = rhs.getServers();
     }
     return (*this);
 }
@@ -31,16 +35,35 @@ Config& Config::operator=(const Config &rhs)
 Config::~Config()
 {}
 
-std::string Config::getName() const
+void    Config::setFileName(std::string fileName)
+{
+    this->_fileName = fileName;
+}
+
+void    Config::setClientMaxBodySize(int clientMaxBodySize)
+{
+    this->_clientMaxBodySize = clientMaxBodySize;
+}
+
+void    Config::addServer(Server server)
+{
+    this->_servers.push_back(server);
+}
+
+std::string Config::getFileName() const
 {
     return (this->_fileName);
 }
 
-ConfigBlock Config::getRootBlock() const
+int Config::getClientMaxBodySize() const
 {
-    return (this->_rootBlock);
+    return (this->_clientMaxBodySize);
 }
 
+std::vector<Server> Config::getServers() const
+{
+    return (this->_servers);
+}
 
 void    Config::parseFile()
 {
@@ -67,7 +90,7 @@ void    Config::parseFile()
             it++;
         }
         std::cout << buf.substr(indentPos, buf.size()) << std::endl;
-        buf.find_first_not_of
+        buf.find_first_not_of()
     }
     ifs.close();
 

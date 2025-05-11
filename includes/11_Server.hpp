@@ -13,6 +13,19 @@ class Server:
         std::vector<Location>                       _location;
         
     public:
-        Server(/* args */);
+        Server();
+        Server(const Server &rhs);
+        Server& operator=(const Server &rhs);
         ~Server();
+
+        void    setName(std::string name);
+        void    setHost(std::string host);
+        void    setPort(int port);
+        void    setListen(std::string listen);
+        void    setRoot(std::string root);
+        void    setServerName
+        
 };
+
+std::ostream	&operator<<(std::ostream& os, const Server& serv);
+
