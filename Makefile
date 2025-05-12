@@ -11,15 +11,25 @@ INCLUDE_DIR = ./includes
 HEADERS = webserv.hpp \
 		  00_ServerManager.hpp \
 		  10_Config.hpp \
-		  11_ConfigBlock.hpp \
-		  12_ConfigDirective.hpp \
-		  
+		  11_Server.hpp \
+		  12_Location.hpp \
+		  12-1_LocationAPI.hpp \
+		  12-2_LocationDownload.hpp \
+		  12-3_LocationUpload.hpp \
+		  12-4_LocationCGI.hpp \
+		  13_FileParser.hpp
 
 SRCS = webserv.cpp \
        00_ServerManager.cpp \
        10_Config.cpp \
-       11_ConfigBlock.cpp \
-	   12_ConfigDirective.cpp \
+       11_Server.cpp \
+	   12_Location.cpp \
+	   12-1_LocationAPI.cpp \
+	   12-2_LocationDownload.cpp \
+	   12-3_LocationUpload.cpp \
+	   12-4_LocationCGI.cpp \
+	   13_FileParser.cpp
+
 
 SRCS_DIR = ./srcs
 OBJS_DIR = ./objs

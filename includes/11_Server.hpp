@@ -1,6 +1,8 @@
 #include "webserv.hpp"
 
-class Server:
+class Location;
+
+class Server
 {
     private:
         std::string                                 _name;
@@ -48,7 +50,7 @@ class Server:
         {
             public:
                 const char* what() const throw();
-        }
+        };
 };
 
 std::ostream	&operator<<(std::ostream& os, const Server& serv);

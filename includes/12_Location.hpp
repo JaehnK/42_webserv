@@ -47,7 +47,8 @@ class Location
         class DataNotFoundException: public std::exception
         {
             public:
-                const char* what() const throw();
-        }
+                virtual const char* what() const throw();
+                virtual ~DataNotFoundException() throw(){};
+        };
 
 };

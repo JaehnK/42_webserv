@@ -24,17 +24,6 @@ ServerManager::~ServerManager()
 
 }
 
-int    ServerManager::setConfig(char *fileName)
-{
-    this->conf = Config(fileName);
-    return (0);
-}
-
-int    ServerManager::setConfig()
-{
-    return (0);
-}
-
 std::vector<std::string> ServerManager::split(const std::string &s, char delimiter)
 {
     std::vector<std::string>    tokens;

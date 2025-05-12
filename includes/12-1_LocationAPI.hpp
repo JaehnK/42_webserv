@@ -14,6 +14,6 @@ class LocationAPI: public Location
 
         void                                        addReturn(std::map<int, std::string> ret);
         std::vector<std::map<int, std::string> >    getReturn() const;
-        void                                        hasReturn() const;
+        bool                                        hasReturn() const;
 
 };

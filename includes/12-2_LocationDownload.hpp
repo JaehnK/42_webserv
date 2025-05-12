@@ -23,4 +23,4 @@ class LocationDownload: public Location
 
         // checker
         bool    hasAddHeader() const;
-}
+};

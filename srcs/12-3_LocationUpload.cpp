@@ -7,11 +7,7 @@ LocationUpload::LocationUpload()
 
 LocationUpload::LocationUpload(const LocationUpload& rhs): Location(rhs)
 {
-    try
-        this->_uploadStore = rhs.getUploadStore();
-    catch (const std::exception& e)
-        this->_uploadStore.clear();
-    
+    *this = rhs;    
 }
 
 LocationUpload& LocationUpload::operator=(const LocationUpload& rhs)
@@ -21,9 +17,13 @@ LocationUpload& LocationUpload::operator=(const LocationUpload& rhs)
         Location::operator=(rhs);
 
         try
+        {
             this->_uploadStore = rhs.getUploadStore();
+        }
         catch (const std::exception& e)
+        {
             this->_uploadStore.clear();
+        }
     }
 
     return (*this);
@@ -49,5 +49,7 @@ std::string LocationUpload::getUploadStore() const
 bool    LocationUpload::hasUploadStore() const
 {
     if (this->_uploadStore.empty())
+        return (false);
+    return (true);
 
 }

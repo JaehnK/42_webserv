@@ -7,16 +7,17 @@ LocationAPI::LocationAPI()
 
 LocationAPI::LocationAPI(const LocationAPI& rhs): Location(rhs)
 {
-    this = &rhs;
+    *this = rhs;
 }
 
 LocationAPI&    LocationAPI::operator=(const LocationAPI& rhs)
 {
-    if (*this != rhs)
+    if (this != &rhs)
     {
         Location::operator=(rhs);
         this->_return = rhs.getReturn();
     }
+    return (*this);
 }
 
 LocationAPI::~LocationAPI()
@@ -36,7 +37,7 @@ std::vector<std::map<int, std::string> >    LocationAPI::getReturn() const
     return (this->_return);
 }
 
-void    LocationAPI::hasReturn() const
+bool    LocationAPI::hasReturn() const
 {
     if (this->_return.size() == 0)
         return (false);

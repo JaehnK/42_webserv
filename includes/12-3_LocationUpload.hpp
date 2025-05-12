@@ -15,4 +15,4 @@ class LocationUpload: public Location
         void        setUploadStore(std::string uploadStore);
         std::string getUploadStore() const;
         bool        hasUploadStore() const;
-}
+};

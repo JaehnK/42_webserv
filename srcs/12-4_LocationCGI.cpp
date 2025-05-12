@@ -7,15 +7,8 @@ LocationCGI::LocationCGI()
 
 LocationCGI::LocationCGI(const LocationCGI& rhs): Location(rhs)
 {
-    try
-        this->_pass = rhs.getPass();
-    catch(const std::exception& e)
-        this->_pass.clear();
-    
-    try
-        this->_param = rhs.getParam();
-    catch(const std::exception& e)
-        this->_param = std::vector<std::string> ();
+    *this = rhs;
+
     
 }
 
@@ -26,14 +19,21 @@ LocationCGI& LocationCGI::operator=(const LocationCGI& rhs)
         Location::operator=(rhs);
         
         try
+        {
             this->_pass = rhs.getPass();
+        }
         catch(const std::exception& e)
+        {
             this->_pass.clear();
-    
+        }
         try
+        {
             this->_param = rhs.getParam();
+        }
         catch(const std::exception& e)
+        {
             this->_param = std::vector<std::string> ();
+        }
     }
     return (*this);
 }
@@ -63,14 +63,14 @@ void    LocationCGI::addParam(std::string param)
 // getter
 std::string                 LocationCGI::getPass() const
 {
-    if (this->_hasPass() == false)
+    if (this->hasPass() == false)
         throw DataNotFoundException();
     return (this->_pass);
 }
 
 std::vector<std::string>    LocationCGI::getParam() const
 {
-    if (this->_hasParam)
+    if (this->hasParam() == false)
         throw DataNotFoundException();
     return (this->_param);
 }

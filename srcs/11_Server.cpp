@@ -3,8 +3,8 @@
 Server::Server()
 {
     this->_port = -1;
-    this->_errorPage = std::vector<std::map<int, std::string> > ();
-    this->_location = std::vector<Location> ();
+    this->_errorPages = std::vector<std::map<int, std::string> > ();
+    this->_locations = std::vector<Location> ();
 }
 
 Server::Server(const Server &rhs)
@@ -14,7 +14,18 @@ Server::Server(const Server &rhs)
 
 Server& Server::operator=(const Server &rhs)
 {
+    if (this != &rhs)
+    {
+        this->_errorPages = rhs.getErrorPages();
+        this->_locations = rhs.getLocations();
+        this->_host = rhs.getHost();
+        this->_listen = rhs.getListen();
+        this->_port = rhs.getPort();
+        this->_root = rhs.getRoot();
+        this->_name = rhs.getName();
 
+    }
+    return (*this);
 }
 
 Server::~Server()
@@ -94,7 +105,7 @@ std::string Server::getRoot() const
 std::vector<std::map<int, std::string> >    Server::getErrorPages() const
 {
     if (this->hasErrorPages() == false)
-    t   hrow DataNotFoundException(); 
+        throw DataNotFoundException(); 
     return (this->_errorPages);
 }
 

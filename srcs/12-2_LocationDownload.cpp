@@ -8,21 +8,26 @@ LocationDownload::LocationDownload()
 
 LocationDownload::LocationDownload(const LocationDownload& rhs)
 {
-    this = &rhs;
+    *this = rhs;
 }
 
 LocationDownload& LocationDownload::operator=(const LocationDownload& rhs)
 {
-    if (*this != rhs)
+    if (this != &rhs)
     {
         Location::operator=(rhs);
         this->_autoIndex = rhs.getAutoIndex();
         
         try
+        {
             this->_addHeader = rhs.getAddHeader();
+        }
         catch(const std::exception& e)
+        {
             this->_addHeader = std::vector<std::string> ();
+        }
     }
+    return (*this);
 }
 
 LocationDownload::~LocationDownload()

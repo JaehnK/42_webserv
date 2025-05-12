@@ -11,12 +11,12 @@ Location::Location()
 
 Location::Location(const Location& rhs)
 {
-    this = &rhs;
+    *this = rhs;
 }
 
 Location&   Location::operator=(const Location& rhs)
 {
-    if (*this != rhs)
+    if (this != &rhs)
     {
         this->_path = rhs.getPath();
         this->_clientMaxBodySize = rhs.getClientMaxBodySize();
@@ -26,6 +26,7 @@ Location&   Location::operator=(const Location& rhs)
         this->_errorPage = rhs.getErrorPage();
         this->_denyAll = rhs.getDenyAll();
     }
+    return (*this);
 }
 
 Location::~Location()
@@ -80,40 +81,40 @@ int Location::getClientMaxBodySize() const
 {
     if (this->hasClientMaxBodysize() == false)
         throw DataNotFoundException();
-    return (this->_path);
+    return (this->_clientMaxBodySize);
 }
 
 std::string Location::getRoot() const
 {
     if (this->hasRoot() == false)
         throw DataNotFoundException();
-    return (this->_path);
+    return (this->_root);
 }
 
 std::vector<std::string>    Location::getIndex() const
 {
     if (this->hasIndex() == false)
         throw DataNotFoundException();
-    return (this->_path);
+    return (this->_index);
 }
 
 std::vector<std::string>    Location::getLimitExcept() const
 {
     if (this->hasLimitExcept() == false)
         throw DataNotFoundException();
-    return (this->_path);
+    return (this->_limitExcept);
 }
 
 std::vector<std::map<int, std::string> >    Location::getErrorPage() const
 {
     if (this->hasErrorPage() == false)
         throw DataNotFoundException();
-    return (this->_path);
+    return (this->_errorPage);
 }
 
 bool    Location::getDenyAll() const
 {
-    return (this->_path);
+    return (this->_denyAll);
 }
 
 bool    Location::hasPath() const
@@ -158,7 +159,7 @@ bool    Location::hasErrorPage() const
     return (true);
 }
 
-const char* Server::DataNotFoundException::what() const throw()
+const char* Location::DataNotFoundException::what() const throw()
 {
     return ("Data does not exist.");
 }
