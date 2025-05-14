@@ -46,6 +46,10 @@ class Server
         bool    hasErrorPages() const;
         bool    hasLocations() const;
 
+        // size
+        size_t  errPagesSize() const;
+        size_t  locationSize() const;
+        
         class DataNotFoundException: public std::exception
         {
             public:

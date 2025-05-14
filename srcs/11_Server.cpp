@@ -5,6 +5,7 @@ Server::Server()
     this->_port = -1;
     this->_errorPages = std::vector<std::map<int, std::string> > ();
     this->_locations = std::vector<Location> ();
+    std::cout << "SERVERINIT" << std::endl;
 }
 
 Server::Server(const Server &rhs)
@@ -69,50 +70,50 @@ void    Server::addLocation(const Location& location)
 
 std::string Server::getName() const
 {
-    if (this->hasName() == false)
-        throw DataNotFoundException();
+    // if (this->hasName() == false)
+    //     throw DataNotFoundException();
     return (this->_name);
 }
 
 std::string Server::getHost() const
 {
-    if (this->hasHost() == false)
-        throw DataNotFoundException();
+    // if (this->hasHost() == false)
+    //     throw DataNotFoundException();
     return (this->_host);
 }
 
 int Server::getPort() const
 {
-    if (this->hasPort() == false)
-        throw DataNotFoundException();
+    // if (this->hasPort() == false)
+    //     throw DataNotFoundException();
     return (this->_port);
 }
 
 std::string Server::getListen() const
 {
-    if (this->hasListen() == false)
-        throw DataNotFoundException();
+    // if (this->hasListen() == false)
+    //     throw DataNotFoundException();
     return (this->_listen);
 }
 
 std::string Server::getRoot() const
 {
-    if (this->hasRoot() == false)
-        throw DataNotFoundException();
+    // if (this->hasRoot() == false)
+    //     throw DataNotFoundException();
     return (this->_root);
 }
 
 std::vector<std::map<int, std::string> >    Server::getErrorPages() const
 {
-    if (this->hasErrorPages() == false)
-        throw DataNotFoundException(); 
+    // if (this->hasErrorPages() == false)
+    //     throw DataNotFoundException(); 
     return (this->_errorPages);
 }
 
 std::vector<Location>   Server::getLocations() const
 {
-    if (this->hasLocations() == false)
-        throw DataNotFoundException();
+    // if (this->hasLocations() == false)
+    //     throw DataNotFoundException();
     return (this->_locations);
 }
 
@@ -165,7 +166,29 @@ bool    Server::hasLocations() const
     return (true);
 }
 
+size_t  Server::errPagesSize() const
+{
+    return (this->_errorPages.size());
+}
+
+size_t  Server::locationSize() const
+{
+    return (this->_locations.size());
+}
+
 const char* Server::DataNotFoundException::what() const throw()
 {
     return ("Data does not exist.");
+}
+
+std::ostream	&operator<<(std::ostream& os, const Server& serv)
+{
+    os << "Server Settings: " << std::endl;
+    os << "  name: " << serv.getName() << "\n";
+    os << "  host: " << serv.getHost() << "\n";
+    os << "  port: " << serv.getPort() << "\n";
+    os << "  listen: " << serv.getListen() << "\n";
+    os << "  errorPages Size: " << serv.errPagesSize() << "\n";
+    os << "  location Size: " << serv.locationSize() << std::endl;
+    return (os);
 }
