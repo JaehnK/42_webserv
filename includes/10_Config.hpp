@@ -10,8 +10,6 @@ class Config
         int                     _clientMaxBodySize;
         std::vector<Server>     _servers;
 
-        void                    parseFile();
-
     public:
         Config();
         Config(char *fileName);
