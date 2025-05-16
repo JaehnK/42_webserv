@@ -38,7 +38,7 @@ class	FileParser
 		void						Parse();
 		std::vector<std::string>	preprocessToken(std::string& buf);
 		void						makeServerBlock();
-		void						makeLocationBlock(std::string root);
+		Location*					makeLocationBlock(std::string root);
 		
 
 

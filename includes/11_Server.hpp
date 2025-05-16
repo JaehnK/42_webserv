@@ -5,13 +5,13 @@ class Location;
 class Server
 {
     private:
-        std::string                                 _name;
-        std::string                                 _host;
-        int                                         _port;
-        std::string                                 _listen;
-        std::string                                 _root;
-        std::vector<std::map<int, std::string> >    _errorPages;
-        std::vector<Location>                       _locations;
+        std::string                 _name;
+        std::string                 _host;
+        int                         _port;
+        std::string                 _listen;
+        std::string                 _root;
+        std::map<int, std::string>  _errorPages;
+        std::vector<Location*>       _locations;
         
     public:
         Server();
@@ -25,17 +25,17 @@ class Server
         void    setPort(int port);
         void    setListen(const std::string& listen);
         void    setRoot(const std::string& root);
-        void    addErrorPage(const std::map<int, std::string>& errPage);
-        void    addLocation(const Location& location);
+        void    addErrorPage(int key, std::string value);
+        void    addLocation(Location* location);
 
         // Getters
-        std::string                                 getName() const;
-        std::string                                 getHost() const;
-        int                                         getPort() const;
-        std::string                                 getListen() const;
-        std::string                                 getRoot() const;
-        std::vector<std::map<int, std::string> >    getErrorPages() const;
-        std::vector<Location>                       getLocations() const;
+        std::string                     getName() const;
+        std::string                     getHost() const;
+        int                             getPort() const;
+        std::string                     getListen() const;
+        std::string                     getRoot() const;
+        std::map<int, std::string>      getErrorPages() const;
+        std::vector<Location*>          getLocations() const;
 
         // Checkers
         bool    hasName() const;

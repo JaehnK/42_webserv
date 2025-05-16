@@ -9,6 +9,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <regex.h>
 #include <unistd.h>
 
 #include <string>
@@ -25,6 +26,7 @@
 #include "12-2_LocationDownload.hpp"
 #include "12-3_LocationUpload.hpp"
 #include "12-4_LocationCGI.hpp"
+#include "12-5_LocationDefault.hpp"
 #include "13_FileParser.hpp"
 
 #include "00_ServerManager.hpp"

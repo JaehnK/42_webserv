@@ -4,7 +4,7 @@
 class LocationAPI: public Location
 {
     private:
-        std::vector<std::map<int, std::string> > _return;
+        std::map<int, std::string> _return;
 
     public:
         LocationAPI();
@@ -12,8 +12,8 @@ class LocationAPI: public Location
         LocationAPI&    operator=(const LocationAPI& rhs);
         ~LocationAPI();
 
-        void                                        addReturn(std::map<int, std::string> ret);
-        std::vector<std::map<int, std::string> >    getReturn() const;
-        bool                                        hasReturn() const;
+        void                        addReturn(int key, std::string val);
+        std::map<int, std::string>  getReturn() const;
+        bool                        hasReturn() const;
 
 };

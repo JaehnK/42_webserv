@@ -2,7 +2,8 @@
 
 LocationAPI::LocationAPI()
 {
-    this->_return = std::vector<std::map<int, std::string> > ();
+    this->_locType = API;
+    this->_return = std::map<int, std::string> ();
 }
 
 LocationAPI::LocationAPI(const LocationAPI& rhs): Location(rhs)
@@ -25,12 +26,12 @@ LocationAPI::~LocationAPI()
 
 }
 
-void    LocationAPI::addReturn(std::map<int, std::string> ret)
+void    LocationAPI::addReturn(int key, std::string val)
 {
-    this->_return.push_back(ret);
+    this->_return[key] = val;
 }
 
-std::vector<std::map<int, std::string> >    LocationAPI::getReturn() const
+std::map<int, std::string>    LocationAPI::getReturn() const
 {
     if (this->hasReturn() == false)
         throw DataNotFoundException();

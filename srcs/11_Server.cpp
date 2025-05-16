@@ -3,9 +3,8 @@
 Server::Server()
 {
     this->_port = -1;
-    this->_errorPages = std::vector<std::map<int, std::string> > ();
-    this->_locations = std::vector<Location> ();
-    std::cout << "SERVERINIT" << std::endl;
+    this->_errorPages = std::map<int, std::string> ();
+    this->_locations = std::vector<Location*> ();
 }
 
 Server::Server(const Server &rhs)
@@ -31,6 +30,11 @@ Server& Server::operator=(const Server &rhs)
 
 Server::~Server()
 {
+    // for (std::vector<Location*>::iterator it = _locations.begin(); 
+    //          it != _locations.end(); ++it) 
+    // {
+    //     delete *it;
+    // }
 }
 
 void    Server::setName(const std::string& name)
@@ -58,12 +62,12 @@ void    Server::setRoot(const std::string& root)
     this->_root = root;
 }
 
-void    Server::addErrorPage(const std::map<int, std::string>& errPage)
+void    Server::addErrorPage(int key, std::string value)
 {
-    this->_errorPages.push_back(errPage);
+    this->_errorPages[key] = value;
 }
 
-void    Server::addLocation(const Location& location)
+void    Server::addLocation(Location* location)
 {
     this->_locations.push_back(location);
 }
@@ -103,14 +107,14 @@ std::string Server::getRoot() const
     return (this->_root);
 }
 
-std::vector<std::map<int, std::string> >    Server::getErrorPages() const
+std::map<int, std::string>    Server::getErrorPages() const
 {
     // if (this->hasErrorPages() == false)
     //     throw DataNotFoundException(); 
     return (this->_errorPages);
 }
 
-std::vector<Location>   Server::getLocations() const
+std::vector<Location*>   Server::getLocations() const
 {
     // if (this->hasLocations() == false)
     //     throw DataNotFoundException();

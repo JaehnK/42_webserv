@@ -4,8 +4,8 @@
 class LocationDownload: public Location
 {
     private:
-        bool                        _autoIndex;
-        std::vector<std::string>    _addHeader;
+        bool                                _autoIndex;
+        std::map<std::string, std::string>  _addHeader;
     
     public:
         LocationDownload();
@@ -15,11 +15,11 @@ class LocationDownload: public Location
 
         // setter
         void    setAutoIndex(bool ai);
-        void    addAddHeader(std::string addHeader);
+        void    addAddHeader(std::string name, std::string value);
 
         // getter
-        bool                        getAutoIndex() const;
-        std::vector<std::string>    getAddHeader() const;
+        bool                                getAutoIndex() const;
+        std::map<std::string, std::string>  getAddHeader() const;
 
         // checker
         bool    hasAddHeader() const;
