@@ -90,7 +90,7 @@ void	FileParser::openFile()
 		throw FileNotOpenedException();
 	if (this->_currentPos != 0)
 	{
-		std::cout << "line number" << this->_currentPos << std::endl;
+		std::cout << "File Open number: " << this->_currentPos << std::endl;
 		_ifs.seekg(this->_currentPos);
 	}
 }
@@ -110,7 +110,7 @@ void    FileParser::Parse()
 		buf = trimBuf(buf);
 		if (buf.empty())
 			continue;
-		std::cout << buf << std::endl;
+		std::cout << "Top: " <<buf << std::endl;
 		splitted = preprocessToken(buf);
 		
 		if (splitted.at(0) == "client_max_body_size")
@@ -215,9 +215,12 @@ void	FileParser::makeServerBlock()
 	
 	while (getline(this->_ifs, buf))
 	{
+		if (this->_ifs.tellg() == -1)
+			break ;
 		buf = trimBuf(buf);
 		if (buf.empty())
 			continue;
+		std::cout << "Serv: " << buf << std::endl;
 		splitted = preprocessToken(buf);
 
 		if (_state == LOCATION_KEYWORD)
@@ -227,6 +230,7 @@ void	FileParser::makeServerBlock()
 				this->setPosition(this->_ifs);
 				this->_ifs.close();
 				serv.addLocation(makeLocationBlock(LocationRoot));
+				openFile();
 			}
 			else
 				throw SyntaxErrorException();
@@ -267,6 +271,8 @@ void	FileParser::makeServerBlock()
 				this->setPosition(this->_ifs);
 				this->_ifs.close();
 				serv.addLocation(makeLocationBlock(LocationRoot));
+				openFile();
+				continue;
 			}
 			else
 			{
@@ -277,13 +283,18 @@ void	FileParser::makeServerBlock()
 					LocationRoot += splitted.at(i);
 				}
 				_state = LOCATION_KEYWORD;
+				if (this->_ifs.tellg() == -1)
+					break ;
+				continue;
 			}
 		}
 		else if (splitted.at(0) == "}")
 			break ;
 		else
 		{
-			std::cout << "ERROR Keyword: " << splitted.at(0) << std::endl;
+			if (this->_ifs.tellg() == -1)
+					break ;
+			std::cout << " :ERROR Keyword(in server): " << splitted.at(0) << std::endl;
 			throw SyntaxErrorException();
 		}
 
@@ -313,7 +324,7 @@ Location*	FileParser::makeLocationBlock(std::string path)
 	else
 		locBlock = new LocationCGI();
 	
-	locBlock->setRoot(path);
+	locBlock->setPath(path);
 	
 	_state = IN_LOCATION;
 	openFile();
@@ -322,8 +333,11 @@ Location*	FileParser::makeLocationBlock(std::string path)
 		buf = trimBuf(buf);
 		if (buf.empty())
 			continue;
+		
 		splitted = preprocessToken(buf);
-
+		std::cout << "Location: " << buf << std::endl;
+		// size_t test = splitted.at(0) == "}";
+		// std::cout << "Close test: " << test << std::endl;
 		if (_state == LOCATION_KEYWORD)
 		{
 			if (splitted.size() == 1 && splitted.at(0) == "{")
@@ -331,11 +345,16 @@ Location*	FileParser::makeLocationBlock(std::string path)
 				this->setPosition(this->_ifs);
 				this->_ifs.close();
 				locBlock->addLocations(makeLocationBlock(LocationRoot));
+				openFile();
 			}
 			else
 				throw SyntaxErrorException();
 		}
-		
+		if (splitted.at(0) == "}")
+		{
+			std::cout << "loc block end" << std::endl;
+			break ;
+		}
 		if (splitted.at(0) == "location")
 		{
 			if (splitted.size() >= 3 && splitted.at(splitted.size() - 1) == "{")
@@ -356,6 +375,7 @@ Location*	FileParser::makeLocationBlock(std::string path)
 				this->setPosition(this->_ifs);
 				this->_ifs.close();
 				locBlock->addLocations(makeLocationBlock(LocationRoot));
+				openFile();
 			}
 			else
 			{
@@ -369,13 +389,20 @@ Location*	FileParser::makeLocationBlock(std::string path)
 			}
 		}
 		else if (splitted.at(0) == "root")
+		{
 			locBlock->setRoot(splitted.at(0));
+			std::cout << "Root : " << locBlock->getRoot() << std::endl;
+		}
 		else if (splitted.at(0) == "index")
+		{
 			locBlock->setIndex(splitted.at(1));
+			std::cout << "Index: "<<locBlock->getIndex() << std::endl;
+		}
 		else if (splitted.at(0) == "limit_except")
 		{
 			for (size_t i = 1; i < splitted.size(); i++)
 				locBlock->addLimitExcept(splitted.at(i));
+			std::cout << "limit except" << std::endl; 
 		}
 		else if (splitted.at(0) == "error_page")
 			locBlock->addErrorPage(std::atoi(splitted.at(1).c_str()), splitted.at(2));
@@ -406,10 +433,10 @@ Location*	FileParser::makeLocationBlock(std::string path)
 			else if (splitted.at(0) == "fastcgi_param")
 				locBlock->addParam(splitted.at(1), splitted.at(2));
 		}
-		else if (splitted.at(0) == "}")
-			break ;
 		else
 		{
+			if (this->_ifs.tellg() == -1)
+				break ;
 			std::cout << "ERROR Keyword: " << splitted.at(0) << std::endl;
 			throw SyntaxErrorException();
 		}
@@ -418,6 +445,7 @@ Location*	FileParser::makeLocationBlock(std::string path)
 	_state = DEFAULT;
 	this->setPosition(this->_ifs);
 	this->_ifs.close();
+	// std::cout << "Location " << locBlock->getPath() <<" Block closed" << std::endl;
 	return (locBlock);
 }
 
