@@ -1,28 +1,46 @@
 #pragma once
 #include "webserv.hpp"
 
+enum HttpMethod
+{
+    METHOD_GET,
+    METHOD_POST,
+    METHOD_DELETE,
+};
+
 class HttpRequest
 {
     private:
-    std::string                         _method;
-    std::string                         _path;
-    std::string                         _protocol;
-    std::map<std::string, std::string>  _headers;
-    std::string                         _body;
+		
+		enum	reqState
+		{
+			IN_REQEUST,
+			IN_HEADER,
+			IN_EMPTYLINE,
+			IN_BODY,
+			COMPLETE,
+			ERROR
+		};
 
-public:
-    HttpRequest();
-    HttpRequest(const std::string& requestData);
-    ~HttpRequest();
+		int									_fd;
+		HttpMethod							_method;
+		std::string							_body;
+		std::map<std::string, std::string>	_headers;
+		reqState							_state;
 
-    bool    parse(const std::string& requestData);
 
-    std::string getMethod()                         const;
-    std::string getPath()                           const;
-    std::string getProtocol()                       const;
-    std::string getHeader()                         const;
-    std::map<std::string, std::string>  getHeader() const;
-    std::string getBody()                           const;
+        HttpRequest();
+    public:
+	
+        HttpRequest(int fd);
+		HttpRequest(const HttpRequest& rhs);
+		HttpRequest&	operator=(const HttpRequest &rhs);
+        ~HttpRequest();
 
-    bool    isComplete() const;
+		// setter
+		void	setMethod(const std::string& method);
+		
+		// getter
+
+
 };
