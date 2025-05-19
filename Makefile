@@ -18,7 +18,10 @@ HEADERS = webserv.hpp \
 		  12-3_LocationUpload.hpp \
 		  12-4_LocationCGI.hpp \
 		  12-5_LocationDefault.hpp \
-		  13_FileParser.hpp
+		  13_FileParser.hpp \
+		  20_HttpServer.hpp \
+		  21_HttpRequest.hpp \
+		  22_HttpResponse.hpp
 
 SRCS = webserv.cpp \
        00_ServerManager.cpp \
@@ -30,7 +33,8 @@ SRCS = webserv.cpp \
 	   12-3_LocationUpload.cpp \
 	   12-4_LocationCGI.cpp \
 	   12-5_LocationDefault.cpp \
-	   13_FileParser.cpp
+	   13_FileParser.cpp \
+	   20_HttpServer.cpp
 
 
 SRCS_DIR = ./srcs

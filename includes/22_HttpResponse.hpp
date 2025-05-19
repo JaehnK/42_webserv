@@ -1,7 +1,7 @@
 #pragma once
 #include "webserv.hpp"
 
-class HttpReponse
+class HttpResponse
 {
 private:
     std::string                        _protocol;
@@ -10,8 +10,8 @@ private:
     std::map<std::string, std::string> _headers;
     std::string                        _body;
 public:
-    HttpReponse();
-    ~HttpReponse();
+    HttpResponse();
+    ~HttpResponse();
 
     void    setStatusCode(int code);
     void    setHeader(const std::string &key, const std::string& value);

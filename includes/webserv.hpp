@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <cstring>
 #include "10_Config.hpp"
 #include "11_Server.hpp"
 #include "12_Location.hpp"

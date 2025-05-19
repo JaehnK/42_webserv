@@ -1,26 +1,24 @@
 #pragma once
 #include "webserv.hpp"
-#include "10_Config.hpp"
-#include "11_Server.hpp"
 
 class HttpServer
 {
 private:
     Config  _config;
-    std::map<int, int> _serverSockerts;
+    std::map<int, int> _serverSockets;
     fd_set  _readFds;
     fd_set  _writeFd;
     int     _maxFd;
 
     struct ClientData
     {
-        int socketFd;
+        int         socketFd;
         std::string request;
         std::string response;
-        bool    requestComplete;
-        bool    responseReady;
-        Server  *server;
-        Location    *location;
+        bool        requestComplete;
+        bool        responseReady;
+        Server*     server;
+        Location*   location;
     };
     
     std::map<int, ClientData>   _clients;
@@ -32,7 +30,7 @@ public:
     void    run();  //  서버 루프
 
 private:
-    int    setupServerSokets();
+    int     setupServerSockets();
     void    acceptNewConnection(int serverFd);
     void    handleClientRequest(int clientFd);
     void    processRequset(ClientData& client);
@@ -40,10 +38,10 @@ private:
     void    sendResponse(int clinetFd);
 
     //  요청 처리
-    Server* findMatchingServer(const std::string& host, int port);
-    Location* findMatchingLocation(Server* server, const std::string& path);
-    void    handleGetRequest(ClientData& client);
-    void    handlePostRequest(ClientData& client);
-    void    handleDeleteRequest(ClientData& client);
-    void    handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
+    Server*     findMatchingServer(const std::string& host, int port);
+    Location*   findMatchingLocation(Server* server, const std::string& path);
+    void        handleGetRequest(ClientData& client);
+    void        handlePostRequest(ClientData& client);
+    void        handleDeleteRequest(ClientData& client);
+    void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
 };

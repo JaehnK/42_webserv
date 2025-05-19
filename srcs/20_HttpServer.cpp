@@ -8,19 +8,19 @@ HttpServer::HttpServer(const Config& config) : _config(config), _maxFd(0)
 
 void    HttpServer::initialize()
 {
-    setupServerSokets();
+    setupServerSockets();
 }
 
-int    HttpServer::setupServerSokets()
+int    HttpServer::setupServerSockets()
 {
     const   std::vector<Server>& servers = _config.getServers();
 
-    for (std::vector<Server>::const_iterator it = servers.begin(); it != servers.end())
+    for (std::vector<Server>::const_iterator it = servers.begin(); it != servers.end(); ++it)
     {
         const Server& server = *it;
         int port = server.getPort();
 
-        if (_serverSockerts.find(port) != _serverSockerts.end())
+        if (_serverSockets.find(port) != _serverSockets.end())
             continue;
 
         int serverFd = socket(PF_INET, SOCK_STREAM, 0);
@@ -29,7 +29,6 @@ int    HttpServer::setupServerSokets()
             perror("socket");
             return (-1);
         }
-
         int opt = 1;
         if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
         {
@@ -37,5 +36,21 @@ int    HttpServer::setupServerSokets()
             close(serverFd);
             return (-1);
         }
+
+        int flags = fcntl(serverFd, F_GETFL, 0);
+        if (flags == -1)
+        {
+            perror("fcntl(F_GETFL)");
+            return (-1);
+        }
+        if (fcntl(serverFd, F_SETFL, flags | O_NONBLOCK) == -1)
+        {
+            perror("fcntl(F_SETFL)");
+            return (-1);
+        }
+        struct sockaddr_in  socketAddr;
+        std::memset(&socketAddr, 0, sizeof(socketAddr));
+        socketAddr.sin_family = AF_INET;
+
     }
 }
