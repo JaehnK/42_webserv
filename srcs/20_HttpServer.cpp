@@ -53,4 +53,5 @@ int    HttpServer::setupServerSockets()
         socketAddr.sin_family = AF_INET;
 
     }
+    return (1);
 }
