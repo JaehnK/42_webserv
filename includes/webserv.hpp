@@ -29,5 +29,6 @@
 #include "12-4_LocationCGI.hpp"
 #include "12-5_LocationDefault.hpp"
 #include "13_FileParser.hpp"
+#include "20_HttpServer.hpp"
 
 #include "00_ServerManager.hpp"

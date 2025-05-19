@@ -31,8 +31,9 @@ class	FileParser
 		void		setFileName(const std::string fileName);
 		void		setPosition(std::ifstream &ifs);
 		
-		std::string		getFileName() const;
-		std::streampos	getPosition() const;
+		std::string		getFileName() 	const;
+		std::streampos	getPosition() 	const;
+		Config			getConfig()		const;
 
 		void						openFile();
 		void						Parse();
