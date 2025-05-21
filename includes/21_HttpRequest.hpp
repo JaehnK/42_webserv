@@ -24,15 +24,18 @@ class HttpRequest
 		int									_fd;
 		std::string							_buffer;
 		HttpMethod							_method;
+		std::string							_url;
 		std::string							_body;
 		std::map<std::string, std::string>	_headers;
+		std::string							_contentType;
 		size_t 								_contentLength;              
 		int 								_bodyBytesRead;
 		ReqState							_state;
 
 		HttpRequest();
 		void	processBuffer();
-
+		void	parseRequest(const std::string& buf);
+		void	parseHeaders(const std::string& buf);
 		 
 	public:
         HttpRequest(int fd);
@@ -50,13 +53,20 @@ class HttpRequest
 		// getter
 		int									getFd() const;
 		HttpMethod							getMethod() const;
+		std::string							getUrl() const;
 		std::string							getBody() const;
 		std::map<std::string, std::string>	getHeaders() const;
+		std::string							getContentType() const;
 		size_t								getContentLength() const;
 		size_t								getBodyBytesRead() const;
 		ReqState							getState() const;
 
 		class HttpRequestException: public std::exception
+		{
+			const char *what() const throw();
+		};
+
+		class HttpRequestSyntaxException: public std::exception
 		{
 			const char *what() const throw();
 		};

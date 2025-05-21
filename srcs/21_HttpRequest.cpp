@@ -47,8 +47,10 @@ HttpRequest&    HttpRequest::operator=(const HttpRequest& rhs)
 	{
 		this->_fd = rhs.getFd();
 		this->_method = rhs.getMethod();
+		this->_url = rhs.getUrl();
 		this->_body = rhs.getBody();
 		this->_headers = rhs.getHeaders();
+		this->_contentType = rhs.getContentType();
 		this->_contentLength = rhs.getContentLength();
 		this->_bodyBytesRead = rhs.getBodyBytesRead();
 		this->_state = rhs.getState();
@@ -94,6 +96,11 @@ HttpMethod	HttpRequest::getMethod() const
 	return (this->_method);
 }
 
+std::string	HttpRequest::getUrl() const
+{
+	return (this->_url);
+}
+
 std::string	HttpRequest::getBody() const
 {
 	return (this->_body);
@@ -102,6 +109,11 @@ std::string	HttpRequest::getBody() const
 std::map<std::string, std::string>	HttpRequest::getHeaders() const
 {
 	return (this->_headers);
+}
+
+std::string	HttpRequest::getContentType() const
+{
+	return (this->_contentType);
 }
 
 size_t	    HttpRequest::getContentLength() const
@@ -138,7 +150,7 @@ void    HttpRequest::processBuffer()
 				
 				std::string	buf = this->_buffer.substr(0, pos);
 				if (!parseRequest(buf))
-					throw HttpRequestException();
+					throw HttpRequestSyntaxException();
 				
 				_continue = true;
 				_state = IN_HEADER;
@@ -149,7 +161,7 @@ void    HttpRequest::processBuffer()
 			case IN_HEADER:
 			{
 				size_t pos = this->_buffer.find("\r\n");
-				if (pos != std::string::npos)
+				if (pos == std::string::npos)
 					return ;
 				else if (pos == 0)
 				{
@@ -161,7 +173,7 @@ void    HttpRequest::processBuffer()
 				{
 					std::string	buf = this->_buffer.substr(0, pos);
 					if (!parseHeaders(buf))
-						throw HttpRequestException();
+						throw HttpRequestSyntaxException();
 					_continue = true;
 					this->_buffer.erase(0, 2);
 				}
@@ -202,7 +214,62 @@ void    HttpRequest::processBuffer()
 	}
 }
 
+void	HttpRequest::parseHeaders(const std::string &buf)
+{
+	size_t		position = 0;
+	size_t		newlinePos, valuePos;
+	std::string	temp = buf;
+	std::string	key, value;
+	
+	while ((newlinePos = temp.find("\r\n")))
+	{
+		std::string	line = temp.substr(position, newlinePos - position);
+		if (line.empty())
+			break;
+
+		valuePos = line.find(": ");
+		if (valuePos == std::string::npos)
+			return (false);
+		
+		key = line.substr(0, pos);
+		value = line.substr(pos + 2, std::string::npos);
+		this->_headers[key] = value;
+		
+		if (key == "Content-Length")
+			this->_contentLength = std::atoi(value.c_str());
+		else if (key == "Content-Type")
+			this->_contentType = value;
+		
+		position = newlinePos + 2;
+	}
+	return (true);
+}
+
+void	HttpRequest::parseRequest(const std::string &buf)
+{
+	std::vector<std::string> elements;
+	
+	elements = ServerManager::split(buf, ' ');
+	
+	if (elements.at(0) == "GET")
+		this->_method = METHOD_GET;
+	else if (elements.at(0) == "POST")
+		this->_method = METHOD_POST;
+	else if (elements.at(0) == "DELETE")
+		this->_method = METHOD_DELETE;
+	else
+		throw HttpRequestSyntaxException();
+	
+	this->_url = elements.at(1);
+
+}
+
 const char *HttpRequest::HttpRequestException::what() const throw()
+{
+	return ("You MotherFucker");
+}
+
+const char *HttpRequest::HttpRequestSyntaxException::what() const throw()
 {
 	return ("You MotherFucker");
 }
