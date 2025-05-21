@@ -15,7 +15,6 @@ enum	ReqState
 	IN_EMPTYLINE,
 	IN_BODY,
 	COMPLETE,
-	ERROR
 };
 
 class HttpRequest
@@ -23,14 +22,18 @@ class HttpRequest
     private:
 
 		int									_fd;
+		std::string							_buffer;
 		HttpMethod							_method;
 		std::string							_body;
 		std::map<std::string, std::string>	_headers;
 		size_t 								_contentLength;              
-		size_t 								_bodyBytesRead;
+		int 								_bodyBytesRead;
 		ReqState							_state;
 
-		HttpRequest();    
+		HttpRequest();
+		void	processBuffer();
+
+		 
 	public:
         HttpRequest(int fd);
 		HttpRequest(const HttpRequest& rhs);
@@ -38,7 +41,7 @@ class HttpRequest
         ~HttpRequest();
 
 		// setter
-		void	setMethod(const std::string& method);
+		void	setMethod(HttpMethod method);
 		void	setBody(const std::string& body);
 		void	setContentLength(size_t length);
 		void	setBodyBytesRead(size_t readBytes);
@@ -52,4 +55,9 @@ class HttpRequest
 		size_t								getContentLength() const;
 		size_t								getBodyBytesRead() const;
 		ReqState							getState() const;
+
+		class HttpRequestException: public std::exception
+		{
+			const char *what() const throw();
+		};
 };

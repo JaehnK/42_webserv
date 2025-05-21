@@ -12,6 +12,8 @@
 #include <regex.h>
 #include <unistd.h>
 
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <iostream>
 #include <fstream>
