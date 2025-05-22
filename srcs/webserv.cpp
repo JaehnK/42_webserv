@@ -8,6 +8,8 @@ int main(int argc, char **argv)
         FileParser     fp(argv[1]);        
         Config         conf = fp.getConfig();
         HttpServer     server(conf);
+        server.initialize();
+        server.run();
     }
     
     return (0);

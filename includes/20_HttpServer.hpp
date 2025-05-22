@@ -18,16 +18,15 @@ private:
     Config  _config;
     std::map<int, int> _serverSockets;
     std::map<int, ClientData>   _clients;
-    fd_set  _readFds;
-    fd_set  _writeFd;
-    int     _maxFd;
-    
+    int     _epollFd;
+
     int     setupServerSockets();
-    void    acceptNewConnection(int serverFd);
-    void    handleClientRequest(int clientFd);
+    void    acceptNewConnection(int serverFd, int epollFd);
+    int    handleClientRequest(int clientFd);
     void    processRequset(ClientData& client);
     void    buildResponse(ClientData& client);
-    void    sendResponse(int clinetFd);
+    int     sendResponse(int clinetFd);
+    void    closeClientConnection(int clientFd, int epollFd);
 
     //  요청 처리
     Server*     findMatchingServer(const std::string& host, int port);
