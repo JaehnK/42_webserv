@@ -4,12 +4,6 @@
 class HttpServer
 {
 private:
-    Config  _config;
-    std::map<int, int> _serverSockets;
-    fd_set  _readFds;
-    fd_set  _writeFd;
-    int     _maxFd;
-
     struct ClientData
     {
         int         socketFd;
@@ -20,22 +14,19 @@ private:
         Server*     server;
         Location*   location;
     };
-    
+
+    Config  _config;
+    std::map<int, int> _serverSockets;
     std::map<int, ClientData>   _clients;
-public:
-    HttpServer(const Config& config);
-    ~HttpServer();
+    int     _epollFd;
 
-    void    initialize();   //  소켓 바인딩
-    void    run();  //  서버 루프
-
-private:
     int     setupServerSockets();
-    void    acceptNewConnection(int serverFd);
-    void    handleClientRequest(int clientFd);
+    void    acceptNewConnection(int serverFd, int epollFd);
+    int    handleClientRequest(int clientFd);
     void    processRequset(ClientData& client);
     void    buildResponse(ClientData& client);
-    void    sendResponse(int clinetFd);
+    int     sendResponse(int clinetFd);
+    void    closeClientConnection(int clientFd, int epollFd);
 
     //  요청 처리
     Server*     findMatchingServer(const std::string& host, int port);
@@ -44,4 +35,17 @@ private:
     void        handlePostRequest(ClientData& client);
     void        handleDeleteRequest(ClientData& client);
     void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
+
+public:
+    HttpServer(const Config& config);
+    ~HttpServer();
+
+    void    initialize();   //  소켓 바인딩
+    void    run();  //  서버 루프
+
+    class   FailedSocket: public std::exception
+    {
+        public:
+            const char *what(void) const throw();
+    };
 };

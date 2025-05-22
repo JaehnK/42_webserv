@@ -56,6 +56,11 @@ std::streampos  FileParser::getPosition() const
 	return (this->_currentPos);
 }
 
+Config			FileParser::getConfig() const
+{
+	return (this->_config);
+}
+
 std::string FileParser::trimBuf(std::string &buf) const
 {
 	size_t      annotPos;
