@@ -246,8 +246,7 @@ void HttpServer::closeClientConnection(int clientFd, int epollFd) {
 
 int HttpServer::handleClientRequest(int clientFd)
 {
-    clientFd = 0;
-    return (1);
+    
 }
 
 void    HttpServer::processRequset(ClientData& client)
