@@ -1,28 +1,73 @@
 #pragma once
 #include "webserv.hpp"
 
+enum	HttpMethod
+{
+    METHOD_GET,
+    METHOD_POST,
+    METHOD_DELETE,
+};
+
+enum	ReqState
+{
+	IN_REQEUST,
+	IN_HEADER,
+	IN_EMPTYLINE,
+	IN_BODY,
+	COMPLETE,
+};
+
 class HttpRequest
 {
     private:
-    std::string                         _method;
-    std::string                         _path;
-    std::string                         _protocol;
-    std::map<std::string, std::string>  _headers;
-    std::string                         _body;
 
-public:
-    HttpRequest();
-    HttpRequest(const std::string& requestData);
-    ~HttpRequest();
+		int									_fd;
+		std::string							_buffer;
+		HttpMethod							_method;
+		std::string							_url;
+		std::string							_body;
+		std::map<std::string, std::string>	_headers;
+		std::string							_contentType;
+		size_t 								_contentLength;              
+		int 								_bodyBytesRead;
+		ReqState							_state;
 
-    bool    parse(const std::string& requestData);
+		HttpRequest();
+		void	processBuffer();
+		void	parseRequest(const std::string& buf);
+		void	parseHeaders(const std::string& buf);
+		 
+	public:
+        HttpRequest(int fd);
+		HttpRequest(const HttpRequest& rhs);
+		HttpRequest&	operator=(const HttpRequest &rhs);
+        ~HttpRequest();
 
-    std::string getMethod()                         const;
-    std::string getPath()                           const;
-    std::string getProtocol()                       const;
-    std::string getHeader()                         const;
-    std::map<std::string, std::string>  getHeader() const;
-    std::string getBody()                           const;
+		// setter
+		void	setMethod(HttpMethod method);
+		void	setBody(const std::string& body);
+		void	setContentLength(size_t length);
+		void	setBodyBytesRead(size_t readBytes);
+		void	addHeader(const std::string& key, const std::string& value);
+		
+		// getter
+		int									getFd() const;
+		HttpMethod							getMethod() const;
+		std::string							getUrl() const;
+		std::string							getBody() const;
+		std::map<std::string, std::string>	getHeaders() const;
+		std::string							getContentType() const;
+		size_t								getContentLength() const;
+		size_t								getBodyBytesRead() const;
+		ReqState							getState() const;
 
-    bool    isComplete() const;
+		class HttpRequestException: public std::exception
+		{
+			const char *what() const throw();
+		};
+
+		class HttpRequestSyntaxException: public std::exception
+		{
+			const char *what() const throw();
+		};
 };

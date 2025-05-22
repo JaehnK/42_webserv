@@ -273,5 +273,4 @@ const char *HttpServer::FailedSocket::what() const throw()
 
 HttpServer::~HttpServer()
 {
-
 }
