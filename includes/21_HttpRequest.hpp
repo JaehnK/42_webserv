@@ -20,7 +20,6 @@ enum	ReqState
 class HttpRequest
 {
     private:
-
 		int									_fd;
 		std::string							_buffer;
 		HttpMethod							_method;
