@@ -150,21 +150,21 @@ void    HttpServer::run()
                     {
                         std::cout << "Creating HttpRequest..." << std::endl;  // 추가
                         // HttpRequest 객체 생성 및 할당 (수정된 부분)
-                        client_it->second.parseRequest = new HttpRequest(currentFd);
+                        // client_it->second.parseRequest = new HttpRequest(currentFd);
                         std::cout << "HttpRequest created successfully" << std::endl;  // 추가
         
                         std::cout << "Calling processRequest..." << std::endl;  // 추가
-                        processRequest(client_it->second);
+                        // processRequest(client_it->second);
                         std::cout << "processRequest completed" << std::endl;  // 추가
                         // 응답 준비되면 쓰기 이벤트로 변경 (수정된 부분)
-                        if (client_it->second.responseReady)
-                        {
+                        // if (client_it->second.responseReady)
+                        // {
                             struct epoll_event  ev;
                             std::memset(&ev, 0, sizeof(ev));
                             ev.events = EPOLLOUT;  // EPOLLIN → EPOLLOUT 수정
                             ev.data.fd = currentFd;
                             epoll_ctl(epollFd, EPOLL_CTL_MOD, currentFd, &ev);  // ADD → MOD 수정
-                        }
+                        // }
                     }
                     catch(const std::exception& e)
                     {
@@ -192,7 +192,7 @@ void    HttpServer::run()
                     }
 
                     // 응답 전송 완료 후 연결 종료
-                    closeClientConnection(currentFd, epollFd);
+                    // closeClientConnection(currentFd, epollFd);
                 }
                 
                 if (events[i].events & (EPOLLERR | EPOLLHUP))
@@ -470,6 +470,11 @@ int HttpServer::sendResponse(int clientFd)
     
     std::cout << "=== sendResponse called for fd: " << clientFd << " ===" << std::endl;
     
+    for (std::map<int, ClientData>::iterator it = _clients.begin(); it != _clients.end(); it++)
+    {
+        std::cout << "iter: " << it->first << std::endl;
+    }
+
     std::map<int, ClientData>::iterator it = _clients.find(clientFd);
     if (it == _clients.end() || !it->second.responseReady)
     {
