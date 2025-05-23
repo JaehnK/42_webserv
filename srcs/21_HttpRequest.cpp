@@ -8,9 +8,10 @@ HttpRequest::HttpRequest(int fd)
 	char buf[4096];
 
 	this->_fd = fd;
-	this->_state = IN_REQEUST;
+	this->_state = IN_REQUEST;
 	this->_headers = std::map<std::string, std::string> ();
-	
+	this->_contentLength = 0;  // 초기화 추가
+    this->_bodyBytesRead = 0;  // 초기화 추가
 	while (1)
 	{
 		std::memset(buf, 0, 4096);
@@ -19,7 +20,7 @@ HttpRequest::HttpRequest(int fd)
 		if (this->_bodyBytesRead < 0)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				throw HttpRequestException();
+				continue;
 			else 
 				throw HttpRequestException();
 		} 
@@ -133,7 +134,7 @@ ReqState    HttpRequest::getState() const
 
 void    HttpRequest::processBuffer()
 {
-	bool _continue = false;
+	bool _continue = true;
 
 	while (_continue)
 	{
@@ -142,16 +143,16 @@ void    HttpRequest::processBuffer()
 
 		switch (this->_state)
 		{
-			case IN_REQEUST:
+			case IN_REQUEST:
 			{
 				size_t pos = this->_buffer.find("\r\n");
 				if (pos != std::string::npos)
 					return ;
 				
 				std::string	buf = this->_buffer.substr(0, pos);
-				if (!parseRequest(buf))
-					throw HttpRequestSyntaxException();
-				
+				// if (!parseRequest(buf))
+				// 	throw HttpRequestSyntaxException();
+				parseRequest(buf);
 				_continue = true;
 				_state = IN_HEADER;
 				this->_buffer.erase(0, pos + 2);
@@ -172,7 +173,7 @@ void    HttpRequest::processBuffer()
 				else
 				{
 					std::string	buf = this->_buffer.substr(0, pos);
-					if (!parseHeaders(buf))
+					if (!parseAllHeaders(buf))
 						throw HttpRequestSyntaxException();
 					_continue = true;
 					this->_buffer.erase(0, 2);
@@ -214,35 +215,71 @@ void    HttpRequest::processBuffer()
 	}
 }
 
-void	HttpRequest::parseHeaders(const std::string &buf)
+bool HttpRequest::parseHeaders(const std::string &buf)
 {
-	size_t		position = 0;
-	size_t		newlinePos, valuePos;
-	std::string	temp = buf;
-	std::string	key, value;
-	
-	while ((newlinePos = temp.find("\r\n")))
-	{
-		std::string	line = temp.substr(position, newlinePos - position);
-		if (line.empty())
-			break;
+    size_t valuePos = buf.find(": ");
+    if (valuePos == std::string::npos)
+        return false;
+    
+    std::string key = buf.substr(0, valuePos);
+    std::string value = buf.substr(valuePos + 2);
+    
+    key.erase(0, key.find_first_not_of(" \t"));
+    key.erase(key.find_last_not_of(" \t") + 1);
+    value.erase(0, value.find_first_not_of(" \t"));
+    value.erase(value.find_last_not_of(" \t") + 1);
+    
+    this->_headers[key] = value;
+    
+    if (key == "Content-Length")
+        this->_contentLength = std::atoi(value.c_str());
+    else if (key == "Content-Type")
+        this->_contentType = value;
+    
+    return true;
+}
 
-		valuePos = line.find(": ");
-		if (valuePos == std::string::npos)
-			return (false);
-		
-		key = line.substr(0, pos);
-		value = line.substr(pos + 2, std::string::npos);
-		this->_headers[key] = value;
-		
-		if (key == "Content-Length")
-			this->_contentLength = std::atoi(value.c_str());
-		else if (key == "Content-Type")
-			this->_contentType = value;
-		
-		position = newlinePos + 2;
-	}
-	return (true);
+bool HttpRequest::parseAllHeaders(const std::string &headerBlock)
+{
+    size_t position = 0;
+    
+    while (position < headerBlock.length())
+    {
+        size_t newlinePos = headerBlock.find("\r\n", position);
+        if (newlinePos == std::string::npos)
+            newlinePos = headerBlock.length();
+        
+        std::string line = headerBlock.substr(position, newlinePos - position);
+        
+        if (line.empty())
+            break;
+        
+        // 단일 헤더 라인 파싱
+        size_t valuePos = line.find(": ");
+        if (valuePos == std::string::npos)
+            return false;
+        
+        std::string key = line.substr(0, valuePos);
+        std::string value = line.substr(valuePos + 2);
+        
+        // 공백 제거
+        key.erase(0, key.find_first_not_of(" \t"));
+        key.erase(key.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t") + 1);
+        
+        this->_headers[key] = value;
+        
+        // 특별한 헤더들 처리
+        if (key == "Content-Length")
+            this->_contentLength = std::atoi(value.c_str());
+        else if (key == "Content-Type")
+            this->_contentType = value;
+        
+        position = newlinePos + 2;
+    }
+    
+    return true;
 }
 
 void	HttpRequest::parseRequest(const std::string &buf)

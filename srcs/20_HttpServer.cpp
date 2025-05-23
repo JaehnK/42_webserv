@@ -1,7 +1,8 @@
 #include "20_HttpServer.hpp"
 
-HttpServer::HttpServer(const Config& config) : _config(config)
+HttpServer::HttpServer(const Config& config) : _config(config), _epollFd(-1)
 {
+    (void)_epollFd;  // 미사용 경고 제거
 }
 
 void    HttpServer::initialize()
@@ -67,13 +68,14 @@ int    HttpServer::setupServerSockets()
         // if (serverFd > _maxFd)
         //     _maxFd = serverFd;
         
-        std::cout << "Server listening on port " << port << "std::endl";
+        std::cout << "Server listening on port " << port << std::endl;
     }
     return (0);
 }
 
 void    HttpServer::run()
 {
+    std::cout << "=== HttpServer::run() started ===" << std::endl;
     int epollFd = epoll_create(1);
     if (epollFd < 0)
     {
@@ -99,84 +101,100 @@ void    HttpServer::run()
     
     while (1)
     {
+        std::cout << "Waiting for events..." << std::endl;
         int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-
+        std::cout << "Got " << numEvents << " events" << std::endl;
+        
         if (numEvents < 0)
         {
             if (errno == EINTR)
                 continue;
             perror("epoll_wait");
-            break ;
+            break;
         }
 
         for (int i = 0; i < numEvents; i++)
         {
             int currentFd = events[i].data.fd;
+            std::cout << "Processing event for fd: " << currentFd << std::endl;
 
-            // 새연결
-            std::map<int, int>::iterator server_it = _serverSockets.find(currentFd);
-            if (server_it != _serverSockets.end())
+            // 서버 소켓인지 확인 (수정된 부분)
+            bool isServerSocket = false;
+            for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
             {
+                if (it->second == currentFd) {
+                    isServerSocket = true;
+                    break;
+                }
+            }
+
+            // 새 연결
+            if (isServerSocket)
+            {
+                std::cout << "SERVER SOCKET FOUND! Calling acceptNewConnection" << std::endl;
                 acceptNewConnection(currentFd, epollFd);
             }
-            //  클라 소켓
+            // 클라이언트 소켓
             else
             {
+                std::cout << "Client socket event detected" << std::endl;
+                
                 if (events[i].events & EPOLLIN)
                 {
-                    int res = handleClientRequest(currentFd);
-
-                    //  처리 후
+                    std::cout << "EPOLLIN event detected" << std::endl;  // 추가
                     std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
                     if (client_it == _clients.end())
                         continue;
-                    if (res < 0)
+                    std::cout << "Client found in map" << std::endl;  // 추가
+                    try
                     {
-                        if (errno != EAGAIN && errno != EWOULDBLOCK)
+                        std::cout << "Creating HttpRequest..." << std::endl;  // 추가
+                        // HttpRequest 객체 생성 및 할당 (수정된 부분)
+                        client_it->second.parseRequest = new HttpRequest(currentFd);
+                        std::cout << "HttpRequest created successfully" << std::endl;  // 추가
+        
+                        std::cout << "Calling processRequest..." << std::endl;  // 추가
+                        processRequest(client_it->second);
+                        std::cout << "processRequest completed" << std::endl;  // 추가
+                        // 응답 준비되면 쓰기 이벤트로 변경 (수정된 부분)
+                        if (client_it->second.responseReady)
                         {
-                            std::cerr << "Error handling client request: ";
-                            std::cerr << strerror(errno) << std::endl;
-                            closeClientConnection(currentFd, epollFd);
+                            struct epoll_event  ev;
+                            std::memset(&ev, 0, sizeof(ev));
+                            ev.events = EPOLLOUT;  // EPOLLIN → EPOLLOUT 수정
+                            ev.data.fd = currentFd;
+                            epoll_ctl(epollFd, EPOLL_CTL_MOD, currentFd, &ev);  // ADD → MOD 수정
                         }
-                        continue;
                     }
-                    // 쓰기 이벤트 등록
-                    if (client_it->second.responseReady)
+                    catch(const std::exception& e)
                     {
-                        struct epoll_event  ev;
-                        std::memset(&ev, 0, sizeof(ev));
-                        ev.events = EPOLLIN;
-                        ev.data.fd = currentFd;
-                        epoll_ctl(epollFd, EPOLL_CTL_ADD, currentFd, &ev);
-                    }
-                }
-                //  응답 전송
-                else if (events[i].events & EPOLLOUT)
-                {
-                    int res = sendResponse(currentFd);
-
-                    // 전송 후
-                    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
-
-                    if (client_it == _clients.end())
-                        continue;
-
-                    if (res < 0)
-                    {
-                        if (errno != EAGAIN && errno != EWOULDBLOCK)
-                        {
-                            std::cerr << "Error handling client request: ";
-                            std::cerr << strerror(errno) << std::endl;
-                            closeClientConnection(currentFd, epollFd);
-                        }
-                        continue;
-                    }
-
-                    if (!client_it->second.responseReady)
-                    {
+                        std::cerr << "Request processing error: " << e.what() << std::endl;
                         closeClientConnection(currentFd, epollFd);
                     }
                 }
+                // 응답 전송
+                else if (events[i].events & EPOLLOUT)
+                {
+                    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
+                    if (client_it == _clients.end())
+                        continue;
+
+                    int res = sendResponse(currentFd);
+
+                    if (res < 0)
+                    {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK)
+                        {
+                            std::cerr << "Error sending response: " << strerror(errno) << std::endl;
+                            closeClientConnection(currentFd, epollFd);
+                        }
+                        continue;
+                    }
+
+                    // 응답 전송 완료 후 연결 종료
+                    closeClientConnection(currentFd, epollFd);
+                }
+                
                 if (events[i].events & (EPOLLERR | EPOLLHUP))
                 {
                     std::cerr << "Error or hangup on client socket (fd: " << currentFd << ")" << std::endl;
@@ -219,6 +237,7 @@ void HttpServer::acceptNewConnection(int serverFd, int epollFd) {
     clientData.responseReady = false;
     clientData.server = NULL;
     clientData.location = NULL;
+    clientData.parseRequest = NULL;
     _clients[clientFd] = clientData;
     
     // epoll에 클라이언트 소켓 등록 (읽기 이벤트)
@@ -234,8 +253,10 @@ void HttpServer::acceptNewConnection(int serverFd, int epollFd) {
     }
 }
 
-void HttpServer::closeClientConnection(int clientFd, int epollFd) {
+void HttpServer::closeClientConnection(int clientFd, int epollFd)
+{
     std::map<int, ClientData>::iterator it = _clients.find(clientFd);
+
     if (it != _clients.end()) {
         std::cout << "Closing client connection (fd: " << clientFd << ")" << std::endl;
         epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);
@@ -244,14 +265,199 @@ void HttpServer::closeClientConnection(int clientFd, int epollFd) {
     }
 }
 
-int HttpServer::handleClientRequest(int clientFd)
+void    HttpServer::processRequest(ClientData& client)
 {
+    if (!client.parseRequest)
+    {
+        throw   FailedSocket();
+    }
+    try
+    {
+        HttpRequest* req = client.parseRequest;
+
+        //  req loging
+        std::cout << "Processing: " << getMethodString(req->getMethod()) << " " << req->getUrl() << std::endl;
+
+        //  server matching
+        std::string host = req->getHeaders().count("Host") ? req->getHeaders().at("Host") : "localhost";
+        client.server = findMatchingServer(host, client.socketFd);
+
+        //  Location matching
+        std::string path = extractPath(req->getUrl());
+        client.location = findMatchingLocation(client.server, path);
+
+        if (!isMethodAllowd(client.location, req->getMethod()))
+        {
+            client.response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 18\r\n\r\nMethod Not Allowed";
+            client.responseReady = true;
+            return ;
+        }
+
+        switch (req->getMethod())
+        {
+            case METHOD_GET:
+                handleGetRequest(client);
+                break;
+            case METHOD_POST:
+                handlePostRequest(client);
+                break;
+            case METHOD_DELETE:
+                handleDeleteRequest(client);
+                break;
+            default:
+                client.response = "HTTP/1.1 501 Not Implemented\r\nContent-Length: 15\r\n\r\nNot Implemented";
+                break;
+        }
+        client.responseReady = true;
+        std::cout << "Request processed successfully" << std::endl;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Erorr processing request: " << e.what() << std::endl;
+        client.response = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 21\r\n\r\nInternal Server Error";
+        client.responseReady = true;
+    }
     
 }
 
-void    HttpServer::processRequset(ClientData& client)
+Server* HttpServer::findMatchingServer(const std::string& host, int port)
 {
-    (void)client;
+    (void)host;
+    (void)port;
+    const std::vector<Server>& servers = _config.getServers();
+
+    return servers.empty() ? NULL : const_cast<Server*>(&servers[0]);
+}
+
+Location* HttpServer::findMatchingLocation(Server* server, const std::string& path)
+{
+    (void)path;  // 미사용 파라미터 경고 제거
+    
+    if (!server)
+        return NULL;
+    
+    // 간단한 구현: 기본 location 반환
+    const std::vector<Location*>& locations = server->getLocations();
+    return locations.empty() ? NULL : locations[0];
+}
+
+void    HttpServer::handleGetRequest(ClientData& client)
+{
+    HttpRequest* req = client.parseRequest;
+    std::string path = extractPath(req->getUrl());
+
+    if (path == "/")
+        path = "/index.html";
+    
+    std::string filePath = "./www" + path;
+    std::ifstream file(filePath.c_str());
+
+    if (file.good())
+    {
+        std::ostringstream buffer;
+        buffer << file.rdbuf();
+        std::string content = buffer.str();
+
+        std::ostringstream response;
+        response << "HTTP/1.1 200 OK\r\n";
+        response << "Content-Type: text/html\r\n";
+        response << "Content-Length: " << content.length() << "\r\n";
+        response << "\r\n";
+        response << content;
+
+        client.response = response.str();
+        std::cout << "Serving file: " << filePath << std::endl;
+    }
+    else
+    {
+        std::string notFound = "<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
+        std::ostringstream  response;
+        response << "HTTP/1.1 404 Not Found\r\n";
+        response << "Content-Type: text/html\r\n";
+        response << "Content-Length: " << notFound.length() << "\r\n";
+        response << "\r\n";
+        response << notFound;
+
+        client.response = response.str();
+        std::cout << "File not found: " << filePath << std::endl;
+    }
+}
+
+void    HttpServer::handlePostRequest(ClientData& client)
+{
+    HttpRequest* req = client.parseRequest;
+    std::string body = req->getBody();
+
+    std::cout << "POST data received: " << body.length() << " bytes" << std::endl;
+
+    std::string responseBody = "POST data received successfully";
+    std::ostringstream  response;
+    response << "HTTP/1.1 200 OK\r\n";
+    response << "Content-Type: text/plain\r\n";
+    response << "Content-Length: " << responseBody.length() << "\r\n";
+    response << "\r\n";
+    response << responseBody;
+
+    client.response = response.str();
+}
+
+void    HttpServer::handleDeleteRequest(ClientData& client)
+{
+    HttpRequest* req = client.parseRequest;
+    std::string path = extractPath(req->getUrl());
+
+    std::cout << "DELETE request for: " << path << std::endl;
+
+    std::string responseBody = "DELETE request processed";
+    std::ostringstream response;
+    response << "HTTP/1.1 200 OK\r\n";
+    response << "Content-Type: text/plain\r\n";
+    response << "Content-Length: " << responseBody.length() << "\r\n";
+    response << "\r\n";
+    response << responseBody;
+
+    client.response = response.str();
+}
+
+void    HttpServer::handleCgiRequest(ClientData& client, LocationCGI* cgiLocation)
+{
+    (void)cgiLocation;
+    client.response = "HTTP/1.1 501 Not Implemented\r\nContent-Length: 15\r\n\r\nCGI Not Ready";
+}
+
+std::string HttpServer::getMethodString(HttpMethod method)
+{
+    switch (method)
+    {
+        case METHOD_GET: return "GET";
+        case METHOD_POST: return "POST";
+        case METHOD_DELETE: return "DELETE";
+        default: return "UNKNOWN";
+    }
+}
+
+std::string HttpServer::extractPath(const std::string& url)
+{
+    size_t  queryPos = url.find('?');
+    if (queryPos != std::string::npos)
+        return url.substr(0, queryPos);
+    return url;
+}
+
+std::string HttpServer::buildFilePath(const Location* location, const std::string& path)
+{
+    std::string root = location ? location->getRoot() : "./www";
+    if (!root.empty() && root[root.length() - 1] == '/')
+        root = root.substr(0, root.length() - 1);
+    return root + path;
+}
+
+bool        HttpServer::isMethodAllowd(const Location* location, HttpMethod method)
+{
+    (void)method;
+    if (!location)
+        return true;
+    return true;
 }
 
 void    HttpServer::buildResponse(ClientData& client)
@@ -261,8 +467,23 @@ void    HttpServer::buildResponse(ClientData& client)
 
 int HttpServer::sendResponse(int clientFd)
 {
-    clientFd = 0;
-    return (1);
+    
+    std::cout << "=== sendResponse called for fd: " << clientFd << " ===" << std::endl;
+    
+    std::map<int, ClientData>::iterator it = _clients.find(clientFd);
+    if (it == _clients.end() || !it->second.responseReady)
+    {
+        std::cout << "No response ready or client not found" << std::endl;
+        return -1;
+    }
+    const std::string& response = it->second.response;
+    ssize_t sent = send(clientFd, response.c_str(), response.length(), 0);
+    
+    if (sent < 0)
+        return -1;
+    
+    std::cout << "Response sent: " << sent << " bytes" << std::endl;
+    return sent;
 }
 
 const char *HttpServer::FailedSocket::what() const throw()

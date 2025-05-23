@@ -10,7 +10,7 @@ enum	HttpMethod
 
 enum	ReqState
 {
-	IN_REQEUST,
+	IN_REQUEST,
 	IN_HEADER,
 	IN_EMPTYLINE,
 	IN_BODY,
@@ -35,8 +35,9 @@ class HttpRequest
 		HttpRequest();
 		void	processBuffer();
 		void	parseRequest(const std::string& buf);
-		void	parseHeaders(const std::string& buf);
-		 
+		bool	parseHeaders(const std::string& buf);
+		bool	parseAllHeaders(const std::string &headerBlock);
+
 	public:
         HttpRequest(int fd);
 		HttpRequest(const HttpRequest& rhs);

@@ -6,13 +6,14 @@ class HttpServer
 private:
     struct ClientData
     {
-        int         socketFd;
-        std::string request;
-        std::string response;
-        bool        requestComplete;
-        bool        responseReady;
-        Server*     server;
-        Location*   location;
+        int             socketFd;
+        std::string     request;
+        std::string     response;
+        bool            requestComplete;
+        bool            responseReady;
+        Server*         server;
+        Location*       location;
+        HttpRequest*    parseRequest;
     };
 
     Config  _config;
@@ -22,8 +23,7 @@ private:
 
     int     setupServerSockets();
     void    acceptNewConnection(int serverFd, int epollFd);
-    int    handleClientRequest(int clientFd);
-    void    processRequset(ClientData& client);
+    void    processRequest(ClientData& client);
     void    buildResponse(ClientData& client);
     int     sendResponse(int clinetFd);
     void    closeClientConnection(int clientFd, int epollFd);
@@ -36,6 +36,11 @@ private:
     void        handleDeleteRequest(ClientData& client);
     void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
 
+    //  utils
+    std::string getMethodString(HttpMethod method);
+    std::string extractPath(const std::string& url);
+    std::string buildFilePath(const Location* location, const std::string& path);
+    bool        isMethodAllowd(const Location* location, HttpMethod method);
 public:
     HttpServer(const Config& config);
     ~HttpServer();
