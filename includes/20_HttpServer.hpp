@@ -26,6 +26,7 @@ private:
     bool    isServerSocket(int currentFd);
     void    acceptNewConnection(int serverFd, int epollFd);
     int     handleClientRead(int currentFd);
+    int     handleClientWrite(int currentFd);
     void    processRequest(ClientData& client);
     void    buildResponse(ClientData& client);
     int     sendResponse(int clinetFd);

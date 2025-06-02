@@ -107,23 +107,9 @@ void    HttpServer::run()
                 // 응답 전송
                 else if (events[i].events & EPOLLOUT)
                 {
-                    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
-                    if (client_it == _clients.end())
+                    if (handleClientWrite(currentFd))
                         continue;
 
-                    int res = sendResponse(currentFd);
-
-                    if (res < 0)
-                    {
-                        if (errno != EAGAIN && errno != EWOULDBLOCK)
-                        {
-                            std::cerr << "Error sending response: " << strerror(errno) << std::endl;
-                            closeClientConnection(currentFd,_epollFd);
-                        }
-                        continue;
-                    }
-
-                    closeClientConnection(currentFd,_epollFd);
                 }
                 
                 if (events[i].events & (EPOLLERR | EPOLLHUP))
@@ -247,6 +233,30 @@ int    HttpServer::handleClientRead(int currentFd)
         closeClientConnection(currentFd, _epollFd);
         return (1);
     }
+    return (0);
+}
+
+int     HttpServer::handleClientWrite(int currentFd)
+{
+    int                                 res;
+    std::map<int, ClientData>::iterator client_it;
+    
+    client_it = _clients.find(currentFd);
+    if (client_it == _clients.end())
+        return (1);
+
+    res = sendResponse(currentFd);
+    if (res < 0)
+    {
+        if (errno != EAGAIN && errno != EWOULDBLOCK)
+        {
+            std::cerr << "Error sending response: " << strerror(errno) << std::endl;
+            closeClientConnection(currentFd,_epollFd);
+        }
+        return (1);
+    }
+
+    closeClientConnection(currentFd,_epollFd);
     return (0);
 }
 
