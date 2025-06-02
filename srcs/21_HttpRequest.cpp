@@ -151,10 +151,10 @@ ReqState    HttpRequest::getState() const
 
 void    HttpRequest::processBuffer()
 {
-    std::cout << "=== processBuffer START ===" << std::endl;
-    std::cout << "Current state: " << this->_state << std::endl;
-    std::cout << "Buffer content: [" << this->_buffer << "]" << std::endl;
-    std::cout << "Buffer length: " << this->_buffer.length() << std::endl;
+    // std::cout << "=== processBuffer START ===" << std::endl;
+    // std::cout << "Current state: " << this->_state << std::endl;
+    // std::cout << "Buffer content: [" << this->_buffer << "]" << std::endl;
+    // std::cout << "Buffer length: " << this->_buffer.length() << std::endl;
 
 	bool _continue = true;
 
@@ -165,18 +165,18 @@ void    HttpRequest::processBuffer()
 		{
 			case IN_REQUEST:
 			{
-                std::cout << "Processing IN_REQUEST state" << std::endl;
+                // std::cout << "Processing IN_REQUEST state" << std::endl;
                 size_t pos = this->_buffer.find("\r\n");
-                std::cout << "Looking for \\r\\n, position: " << pos << std::endl;
+                // std::cout << "Looking for \\r\\n, position: " << pos << std::endl;
 				// if (pos != std::string::npos)
 				// 	return ;
 				if (pos == std::string::npos)
                 {
-                    std::cout << "No \\r\\n found, returning" << std::endl;
+                    // std::cout << "No \\r\\n found, returning" << std::endl;
                     return;
                 }
 				std::string	buf = this->_buffer.substr(0, pos);
-				std::cout << "Extracted request line: [" << buf << "]" << std::endl;
+				// std::cout << "Extracted request line: [" << buf << "]" << std::endl;
 				// if (!parseRequest(buf))
 				// 	throw HttpRequestSyntaxException();
 				parseRequest(buf);
@@ -188,31 +188,31 @@ void    HttpRequest::processBuffer()
 
 			case IN_HEADER:
 			{
-				std::cout << "Processing IN_HEADER state" << std::endl;
-				std::cout << "Buffer before processing: [" << this->_buffer.substr(0, 50) << "...]" << std::endl;
+				// std::cout << "Processing IN_HEADER state" << std::endl;
+				// std::cout << "Buffer before processing: [" << this->_buffer.substr(0, 50) << "...]" << std::endl;
     
 				size_t pos = this->_buffer.find("\r\n");
-				std::cout << "Looking for header \\r\\n, position: " << pos << std::endl;
+				// std::cout << "Looking for header \\r\\n, position: " << pos << std::endl;
 				if (pos == std::string::npos)
 					return ;
 				else if (pos == 0)
 				{
-					std::cout << "Found empty line, moving to IN_EMPTYLINE" << std::endl;
+					// std::cout << "Found empty line, moving to IN_EMPTYLINE" << std::endl;
 					_continue = true;
 					this->_buffer.erase(0, 2);
 					this->_state = IN_EMPTYLINE;
-					std::cout << "Buffer after empty line erase: [" << this->_buffer.substr(0, 50) << "...]" << std::endl;
+					// std::cout << "Buffer after empty line erase: [" << this->_buffer.substr(0, 50) << "...]" << std::endl;
 				}	
 				else
 				{
 					std::string buf = this->_buffer.substr(0, pos);
-					std::cout << "Processing header: [" << buf << "]" << std::endl;
-					std::cout << "About to erase " << (pos + 2) << " characters" << std::endl;
+					// std::cout << "Processing header: [" << buf << "]" << std::endl;
+					// std::cout << "About to erase " << (pos + 2) << " characters" << std::endl;
 					if (!parseHeaders(buf))
 					throw HttpRequestSyntaxException();
 				
 					this->_buffer.erase(0, pos + 2);
-					std::cout << "Buffer after header erase: [" << this->_buffer.substr(0, 50) << "...]" << std::endl;
+					// std::cout << "Buffer after header erase: [" << this->_buffer.substr(0, 50) << "...]" << std::endl;
 					_continue = true;
 				}
 				break;
@@ -321,16 +321,16 @@ bool HttpRequest::parseAllHeaders(const std::string &headerBlock)
 
 void	HttpRequest::parseRequest(const std::string &buf)
 {
-	std::cout << "Parsing request line: [" << buf << "]" << std::endl;  // 추가
+	// std::cout << "Parsing request line: [" << buf << "]" << std::endl;  // 추가
 	std::vector<std::string> elements;
 	
 	elements = ServerManager::split(buf, ' ');
-	std::cout << "Split elements count: " << elements.size() << std::endl;  // 추가
+	// std::cout << "Split elements count: " << elements.size() << std::endl;  // 추가
 	for (size_t i = 0; i < elements.size(); i++) {
         std::cout << "Element[" << i << "]: [" << elements[i] << "]" << std::endl;  // 추가
     }
 	if (elements.size() < 2) {  // 검증 추가
-        std::cout << "Not enough elements in request line" << std::endl;
+        // std::cout << "Not enough elements in request line" << std::endl;
 		this->_method = METHOD_GET;      // 기본값 설정
         this->_url = "/";                // 기본값 설정
         return;

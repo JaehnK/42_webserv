@@ -387,6 +387,7 @@ Location* HttpServer::findMatchingLocation(Server* server, const std::string& pa
         return NULL;
     }
 }
+
 void    HttpServer::handleGetRequest(ClientData& client)
 {
     std::cout << "=== handleGetRequest START ===" << std::endl;
