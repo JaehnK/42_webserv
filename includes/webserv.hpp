@@ -35,3 +35,5 @@
 #include "22_HttpResponse.hpp"
 #include "20_HttpServer.hpp"
 #include "00_ServerManager.hpp"
+
+#define MAX_EVENTS 64

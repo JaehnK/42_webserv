@@ -1,13 +1,14 @@
 #include "20_HttpServer.hpp"
 
-HttpServer::HttpServer(const Config& config) : _config(config), _epollFd(-1)
+HttpServer::HttpServer(const Config& config) : _config(config)
 {
-    (void)_epollFd;  // 미사용 경고 제거
+    _epollFd = -1;
 }
 
 void    HttpServer::initialize()
 {
     setupServerSockets();
+    initaliseEpoll(&_epollFd);
 }
 
 int    HttpServer::setupServerSockets()
@@ -75,18 +76,14 @@ int    HttpServer::setupServerSockets()
 
 void    HttpServer::run()
 {
-    std::cout << "=== HttpServer::run() started ===" << std::endl;
-    int epollFd;
-    initaliseEpoll(&epollFd);
-    const int   MAX_EVENTS = 64;
+    int                 numEvents;
     struct epoll_event  events[MAX_EVENTS];
-    
+    std::cout << "=== HttpServer::run() started ===" << std::endl;
+
     while (1)
     {
         std::cout << "Waiting for events..." << std::endl;
-        int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-        std::cout << "Got " << numEvents << " events" << std::endl;
-        
+        numEvents = epoll_wait(_epollFd, events, MAX_EVENTS, -1);        
         if (numEvents < 0)
         {
             if (errno == EINTR)
@@ -97,22 +94,14 @@ void    HttpServer::run()
 
         for (int i = 0; i < numEvents; i++)
         {
-            int currentFd = events[i].data.fd;
-            std::cout << "Processing event for fd: " << currentFd << std::endl;           
-
-            
+            int currentFd = events[i].data.fd;                     
             if (isServerSocket(currentFd)) // Server Socket
-            {
-                std::cout << "SERVER SOCKET FOUND! Calling acceptNewConnection" << std::endl;
-                acceptNewConnection(currentFd, epollFd);
-            }
+                acceptNewConnection(currentFd, _epollFd);
             else // Client Socket
             {
-                std::cout << "Client socket event detected" << std::endl;
-                
                 if (events[i].events & EPOLLIN)
                 {
-                    if (handleClientRead(currentFd, epollFd))
+                    if (handleClientRead(currentFd))
                         continue;
                 }
                 // 응답 전송
@@ -129,23 +118,23 @@ void    HttpServer::run()
                         if (errno != EAGAIN && errno != EWOULDBLOCK)
                         {
                             std::cerr << "Error sending response: " << strerror(errno) << std::endl;
-                            closeClientConnection(currentFd, epollFd);
+                            closeClientConnection(currentFd,_epollFd);
                         }
                         continue;
                     }
 
-                    closeClientConnection(currentFd, epollFd);
+                    closeClientConnection(currentFd,_epollFd);
                 }
                 
                 if (events[i].events & (EPOLLERR | EPOLLHUP))
                 {
                     std::cerr << "Error or hangup on client socket (fd: " << currentFd << ")" << std::endl;
-                    closeClientConnection(currentFd, epollFd);
+                    closeClientConnection(currentFd,_epollFd);
                 }
             }
         }
     }
-    close(epollFd);
+    close(_epollFd);
 }
 
 void HttpServer::initaliseEpoll(int *epollFd)
@@ -168,7 +157,6 @@ void HttpServer::initaliseEpoll(int *epollFd)
         }
     }
 }
-
 
 bool    HttpServer::isServerSocket(int currentFd)
 {
@@ -231,7 +219,7 @@ void HttpServer::acceptNewConnection(int serverFd, int epollFd) {
     }
 }
 
-int    HttpServer::handleClientRead(int currentFd, int epollFd)
+int    HttpServer::handleClientRead(int currentFd)
 {
     std::map<int, ClientData>::iterator client_it;
     struct epoll_event                  ev;
@@ -250,13 +238,13 @@ int    HttpServer::handleClientRead(int currentFd, int epollFd)
             std::memset(&ev, 0, sizeof(ev));
             ev.events = EPOLLOUT;
             ev.data.fd = currentFd;
-            epoll_ctl(epollFd, EPOLL_CTL_MOD, currentFd, &ev);
+            epoll_ctl(_epollFd, EPOLL_CTL_MOD, currentFd, &ev);
         }
     }
     catch (const std::exception& e)
     {
         std::cerr << "Request processing error: " << e.what() << std::endl;
-        closeClientConnection(currentFd, epollFd);
+        closeClientConnection(currentFd, _epollFd);
         return (1);
     }
     return (0);

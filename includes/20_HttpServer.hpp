@@ -16,16 +16,16 @@ private:
         HttpRequest*    parseRequest;
     };
 
-    Config  _config;
-    std::map<int, int> _serverSockets;
+    int                         _epollFd;
+    Config                      _config;
+    std::map<int, int>          _serverSockets;
     std::map<int, ClientData>   _clients;
-    int     _epollFd;
 
     int     setupServerSockets();
     void    initaliseEpoll(int *epollFd);
     bool    isServerSocket(int currentFd);
     void    acceptNewConnection(int serverFd, int epollFd);
-    int     handleClientRead(int currentFd, int epollFd);
+    int     handleClientRead(int currentFd);
     void    processRequest(ClientData& client);
     void    buildResponse(ClientData& client);
     int     sendResponse(int clinetFd);
