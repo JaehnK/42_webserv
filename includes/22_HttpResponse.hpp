@@ -4,23 +4,43 @@
 class HttpResponse
 {
     private:
-        std::string                        _protocol;
-        int                                _statusCode;
-        std::string                        _statusMsg;
-        std::map<std::string, std::string> _headers;
-        std::string                        _body;
-        std::string                        _responseMsg;
-        HttpRequest&                       _request;
-
+        HttpMethod      _reqMethod;
+        std::string     _reqUrl;
+        int             _statCode;
+        std::string     _mimeType;
+        std::string     _body;
+        std::string		_totalResp;
+        
+        static bool                                 _initalised;
+        static std::map<int, std::string>           _statMsgs;
+        static std::map<std::string, std::string>   _mimeTypes;
         HttpResponse();
+    
     public:
-        HttpResponse(const HttpRequest& request);
-        ~HttpResponse();
+        HttpResponse(HttpRequest& req);
+        HttpResponse(const HttpResponse& rhs);
+		HttpResponse& operator=(const HttpResponse &rhs);
+		~HttpResponse();
+        
+        static void    initStaticVars();
+        
+        HttpMethod  getReqMethod() const;
+        std::string getReqUrl() const;
+        int         getStatCode() const;
+        std::string getMimeType() const;
+        std::string getBody() const;
+        std::string getTotalResp() const;
 
-        void    setStatusCode(int code);
-        void    setHeader(const std::string &key, const std::string& value);
-        void    setBody(const std::string& body);
+        std::string getStatMsg(int code) const;
+        std::string getContentType(std::string mime) const;
 
-        std::string build() const;
-        static std::string getStatusMessage(int code);
+        bool    checkAllowedMethod(std::vector<std::string> limits);
+        void    handleMethod();
+        void    createGetResponse();
+        void    createPostResponse();
+        void    createDeleteResponse();
+
+
+        void    assembleMsg();
+        
 };
