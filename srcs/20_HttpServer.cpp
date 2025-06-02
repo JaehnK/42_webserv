@@ -76,26 +76,8 @@ int    HttpServer::setupServerSockets()
 void    HttpServer::run()
 {
     std::cout << "=== HttpServer::run() started ===" << std::endl;
-    int epollFd = epoll_create(1);
-    if (epollFd < 0)
-    {
-        throw FailedSocket();
-    }
-
-    for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
-    {
-        int serverFd = it->second;
-        struct epoll_event  ev;
-        std::memset(&ev, 0, sizeof(ev));
-        ev.events = EPOLLIN;
-        ev.data.fd = serverFd;
-
-        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFd, &ev) < 0)
-        {
-            throw FailedSocket();
-        }
-    }
-
+    int epollFd;
+    initaliseEpoll(&epollFd);
     const int   MAX_EVENTS = 64;
     struct epoll_event  events[MAX_EVENTS];
     
@@ -116,26 +98,15 @@ void    HttpServer::run()
         for (int i = 0; i < numEvents; i++)
         {
             int currentFd = events[i].data.fd;
-            std::cout << "Processing event for fd: " << currentFd << std::endl;
+            std::cout << "Processing event for fd: " << currentFd << std::endl;           
 
-            // 서버 소켓인지 확인 (수정된 부분)
-            bool isServerSocket = false;
-            for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
-            {
-                if (it->second == currentFd) {
-                    isServerSocket = true;
-                    break;
-                }
-            }
-
-            // 새 연결
-            if (isServerSocket)
+            
+            if (isServerSocket(currentFd)) // Server Socket
             {
                 std::cout << "SERVER SOCKET FOUND! Calling acceptNewConnection" << std::endl;
                 acceptNewConnection(currentFd, epollFd);
             }
-            // 클라이언트 소켓
-            else
+            else // Client Socket
             {
                 std::cout << "Client socket event detected" << std::endl;
                 
@@ -175,6 +146,42 @@ void    HttpServer::run()
         }
     }
     close(epollFd);
+}
+
+void HttpServer::initaliseEpoll(int *epollFd)
+{
+    struct epoll_event  ev;
+
+    *epollFd = epoll_create(1);   
+    if (*epollFd < 0)
+        throw FailedSocket();
+    
+    for (std::map<int, int>::iterator it = _serverSockets.begin(); \
+            it != _serverSockets.end(); ++it)
+    {
+        std::memset(&ev, 0, sizeof(ev));
+        ev.events = EPOLLIN;
+        ev.data.fd = it->second; // server Fd
+        if (epoll_ctl(*epollFd, EPOLL_CTL_ADD, ev.data.fd, &ev) < 0)
+        {
+            throw FailedSocket();
+        }
+    }
+}
+
+
+bool    HttpServer::isServerSocket(int currentFd)
+{
+    bool isServerSocket = false;
+    for (std::map<int, int>::iterator it = _serverSockets.begin(); 
+            it != _serverSockets.end(); ++it)
+    {
+        if (it->second == currentFd) {
+            isServerSocket = true;
+            break;
+        }
+    }
+    return isServerSocket;
 }
 
 void HttpServer::acceptNewConnection(int serverFd, int epollFd) {
