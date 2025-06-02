@@ -141,36 +141,8 @@ void    HttpServer::run()
                 
                 if (events[i].events & EPOLLIN)
                 {
-                    std::cout << "EPOLLIN event detected" << std::endl;  // 추가
-                    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
-                    if (client_it == _clients.end())
+                    if (handleClientRead(currentFd, epollFd))
                         continue;
-                    std::cout << "Client found in map" << std::endl;  // 추가
-                    try
-                    {
-                        std::cout << "Creating HttpRequest..." << std::endl;  // 추가
-                        // HttpRequest 객체 생성 및 할당 (수정된 부분)
-                        client_it->second.parseRequest = new HttpRequest(currentFd);
-                        std::cout << "HttpRequest created successfully" << std::endl;  // 추가
-        
-                        std::cout << "Calling processRequest..." << std::endl;  // 추가
-                        processRequest(client_it->second);
-                        std::cout << "processRequest completed" << std::endl;  // 추가
-                        // 응답 준비되면 쓰기 이벤트로 변경 (수정된 부분)
-                        if (client_it->second.responseReady)
-                        {
-                            struct epoll_event  ev;
-                            std::memset(&ev, 0, sizeof(ev));
-                            ev.events = EPOLLOUT;  // EPOLLIN → EPOLLOUT 수정
-                            ev.data.fd = currentFd;
-                            epoll_ctl(epollFd, EPOLL_CTL_MOD, currentFd, &ev);  // ADD → MOD 수정
-                        }
-                    }
-                    catch(const std::exception& e)
-                    {
-                        std::cerr << "Request processing error: " << e.what() << std::endl;
-                        closeClientConnection(currentFd, epollFd);
-                    }
                 }
                 // 응답 전송
                 else if (events[i].events & EPOLLOUT)
@@ -191,7 +163,6 @@ void    HttpServer::run()
                         continue;
                     }
 
-                    // 응답 전송 완료 후 연결 종료
                     closeClientConnection(currentFd, epollFd);
                 }
                 
@@ -251,6 +222,37 @@ void HttpServer::acceptNewConnection(int serverFd, int epollFd) {
         _clients.erase(clientFd);
         close(clientFd);
     }
+}
+
+int    HttpServer::handleClientRead(int currentFd, int epollFd)
+{
+    std::map<int, ClientData>::iterator client_it;
+    struct epoll_event                  ev;
+
+    
+    client_it = _clients.find(currentFd);
+    if (client_it == _clients.end())
+        return (1);
+        
+    try
+    {
+        client_it->second.parseRequest = new HttpRequest(currentFd);
+        processRequest(client_it->second); 
+        if (client_it->second.responseReady)
+        {
+            std::memset(&ev, 0, sizeof(ev));
+            ev.events = EPOLLOUT;
+            ev.data.fd = currentFd;
+            epoll_ctl(epollFd, EPOLL_CTL_MOD, currentFd, &ev);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Request processing error: " << e.what() << std::endl;
+        closeClientConnection(currentFd, epollFd);
+        return (1);
+    }
+    return (0);
 }
 
 void HttpServer::closeClientConnection(int clientFd, int epollFd)
@@ -562,7 +564,7 @@ int HttpServer::sendResponse(int clientFd)
         return -1;
     }
     
-    std::cout << "Client found, responseReady: " << it->second.responseReady << std::endl;  // 추가
+    std::cout << "Client found, responseReady: " << it->second.responseReady << std::endl;  
     
     if (!it->second.responseReady)
     {
@@ -571,7 +573,7 @@ int HttpServer::sendResponse(int clientFd)
     }
     
     const std::string& response = it->second.response;
-    std::cout << "Response size: " << response.length() << " bytes" << std::endl;  // 추가
+    std::cout << "Response size: " << response.length() << " bytes" << std::endl;  
     
     ssize_t sent = send(clientFd, response.c_str(), response.length(), 0);
     

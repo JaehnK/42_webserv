@@ -22,7 +22,9 @@ private:
     int     _epollFd;
 
     int     setupServerSockets();
+    bool    isServerSocket();
     void    acceptNewConnection(int serverFd, int epollFd);
+    int     handleClientRead(int currentFd, int epollFd);
     void    processRequest(ClientData& client);
     void    buildResponse(ClientData& client);
     int     sendResponse(int clinetFd);
