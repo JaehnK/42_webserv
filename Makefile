@@ -22,6 +22,7 @@ HEADERS = webserv.hpp \
 		  20_HttpServer.hpp \
 		  21_HttpRequest.hpp \
 		  22_HttpResponse.hpp \
+		  23_ClientData.hpp
 
 SRCS = webserv.cpp \
        00_ServerManager.cpp \
@@ -36,6 +37,8 @@ SRCS = webserv.cpp \
 	   13_FileParser.cpp \
 	   20_HttpServer.cpp \
 	   21_HttpRequest.cpp \
+	   22_HttpResponse.cpp \
+	   23_ClientData.cpp \
 
 
 SRCS_DIR = ./srcs

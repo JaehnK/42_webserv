@@ -12,6 +12,7 @@
 #include <regex.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -32,5 +33,9 @@
 #include "12-5_LocationDefault.hpp"
 #include "13_FileParser.hpp"
 #include "21_HttpRequest.hpp"
+#include "22_HttpResponse.hpp"
+#include "23_ClientData.hpp"
 #include "20_HttpServer.hpp"
 #include "00_ServerManager.hpp"
+
+#define MAX_EVENTS 64
