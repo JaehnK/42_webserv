@@ -2,16 +2,56 @@
 
 HttpServer::HttpServer(const Config& config) : _config(config)
 {
-    _epollFd = -1;
 }
-
 
 void    HttpServer::initialize()
 {
     setupServerSockets();
-    initaliseEpoll(&_epollFd);
+    initializeEpoll();
 }
 
+int     HttpServer::createServerSocket(int port)
+{
+	int fd = socket(PF_INET, SOCK_STREAM, 0);
+	if (fd < 0)
+		throw SocketCreationError();
+	try {
+		configureSocket(fd);
+		bindAndListen(fd, port);
+		return fd;
+	} catch (const std::exception& e) {
+		close(fd);
+		throw;
+	}
+}
+
+void	HttpServer::configureSocket(int fd)
+{
+	int opt = 1;
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+		throw SocketConfigError();
+
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		throw SocketConfigError();
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		throw SocketConfigError();
+}
+
+void	HttpServer::bindAndListen(int fd, int port)
+{
+	struct sockaddr_in socketAddr;
+	std::memset(&socketAddr, 0, sizeof(socketAddr));
+	socketAddr.sin_family = AF_INET;
+	socketAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	socketAddr.sin_port = htons(port);
+
+	if (bind(fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) < 0)
+		throw SocketConfigError();
+
+	if (listen(fd, 10) < 0)
+		throw SocketConfigError();
+}
 
 int    HttpServer::setupServerSockets()
 {
@@ -25,181 +65,79 @@ int    HttpServer::setupServerSockets()
         if (_serverSockets.find(port) != _serverSockets.end())
             continue;
 
-        int serverFd = socket(PF_INET, SOCK_STREAM, 0);
-        if (serverFd < 0)
-        {
-            throw   FailedSocket();
-        }
-        int opt = 1;
-        if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-        {
-            close(serverFd);
-            throw   FailedSocket();
-        }
-
-        int flags = fcntl(serverFd, F_GETFL, 0);
-        if (flags == -1)
-        {
-            close(serverFd);
-            throw   FailedSocket();
-        }
-        if (fcntl(serverFd, F_SETFL, flags | O_NONBLOCK) == -1)
-        {
-            close(serverFd);
-            throw   FailedSocket();
-        }
-        struct sockaddr_in  socketAddr;
-        std::memset(&socketAddr, 0, sizeof(socketAddr));
-        socketAddr.sin_family = AF_INET;
-        socketAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        socketAddr.sin_port = htons(port);
-
-        if (bind(serverFd, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) < 0)
-        {
-            close(serverFd);
-            throw   FailedSocket();
-        }
-
-        if (listen(serverFd, 10) < 0)
-        {
-            close(serverFd);
-            throw   FailedSocket();
-        }
-        _serverSockets[port] = serverFd;
-        // FD_SET(serverFd, &_readFds);
-
-        // if (serverFd > _maxFd)
-        //     _maxFd = serverFd;
-        
+		try {
+			int fd = createServerSocket(port);
+			_serverSockets[port] = fd;
+		} catch (const std::exception& e) {
+            std::cerr << "Failed to setup server socket for port " << port << ": " << e.what() << std::endl;
+            throw;
+		}
         std::cout << "Server listening on port " << port << std::endl;
     }
     return (0);
 }
 
-void    HttpServer::initaliseEpoll(int *epollFd)
+void    HttpServer::initializeEpoll()
 {
-    struct epoll_event  ev;
-
-    *epollFd = epoll_create(1);   
-    if (*epollFd < 0)
-        throw FailedSocket();
-    
-    for (std::map<int, int>::iterator it = _serverSockets.begin(); \
-            it != _serverSockets.end(); ++it)
-    {
-        std::memset(&ev, 0, sizeof(ev));
-        ev.events = EPOLLIN;
-        ev.data.fd = it->second; // server Fd
-        if (epoll_ctl(*epollFd, EPOLL_CTL_ADD, ev.data.fd, &ev) < 0)
-        {
-            throw FailedSocket();
-        }
-    }
+    for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
+		_epoll.add(it->second, EPOLLIN);
 }
 
-
-bool    HttpServer::isServerSocket(int currentFd)
+bool    HttpServer::isServerSocket(int fd)
 {
-    bool isServerSocket = false;
-    for (std::map<int, int>::iterator it = _serverSockets.begin(); 
-            it != _serverSockets.end(); ++it)
-    {
-        if (it->second == currentFd) 
-        {
-            isServerSocket = true;
-            break;
-        }
-    }
-    return isServerSocket;
+	for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
+		if (it->second == fd)
+			return true;
+	return false;
+}
+
+void	HttpServer::handleEvent(const epoll_event& event)
+{
+	int fd = event.data.fd;
+
+	if (isServerSocket(fd))
+		acceptNewConnection(fd);
+	else
+	{
+		if (event.events & EPOLLERR || event.events & EPOLLHUP)
+		{
+			std::cerr << "Error or hangup on socket (fd: " << fd << ")" << std::endl;
+			closeClientConnection(fd);
+			return;
+		}
+		if (event.events & EPOLLIN)
+		{
+			handleClientRead(fd);
+		}
+		else if (event.events & EPOLLOUT)
+		{
+			handleClientWrite(fd);
+		}
+	}
 }
 
 void    HttpServer::run()
 {
-    int                 numEvents;
-    struct epoll_event  events[MAX_EVENTS];
-    std::cout << "=== HttpServer::run() started ===" << std::endl;
+    int	eventCount;
 
     while (1)
     {
         std::cout << "Waiting for events..." << std::endl;
-        numEvents = epoll_wait(_epollFd, events, MAX_EVENTS, -1);        
-        if (numEvents < 0)
-        {
-            if (errno == EINTR)
-                continue;
-            perror("epoll_wait");
-            break;
-        }
-
-        for (int i = 0; i < numEvents; i++)
-        {
-            int currentFd = events[i].data.fd;                     
-            if (isServerSocket(currentFd)) // Server Socket
-                acceptNewConnection(currentFd, _epollFd);
-            else // Client Socket
-            {
-                if (events[i].events & EPOLLIN)
-                {
-                    if (handleClientRead(currentFd))
-                        continue;
-                }
-                else if (events[i].events & EPOLLOUT)
-                {
-                    if (handleClientWrite(currentFd))
-                        continue;
-                }
-                else if (events[i].events & (EPOLLERR | EPOLLHUP))
-                {
-                    std::cerr << "Error or hangup on client socket (fd: " << currentFd << ")" << std::endl;
-                    closeClientConnection(currentFd,_epollFd);
-                }
-            }
-        }
+		try {
+			eventCount = _epoll.wait(_events);
+		} catch (const std::exception& e) {
+			std::cerr << "Epoll error: " << e.what() << std::endl;
+			break;
+		}
+        for (int i = 0; i < eventCount; i++)
+			handleEvent(_events[i]);
     }
-    close(_epollFd);
 }
 
-
-// void    HttpServer::acceptNewConnection(int serverFd, int epollFd) {
-//     int                 serverPort;
-//     int                 clientFd;
-//     struct sockaddr_in  clientAddr;
-//     socklen_t           clientAddrLen;
-    
-//     clientAddrLen = sizeof(clientAddr);
-//     clientFd = accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
-//     if (clientFd < 0)
-//     {
-//         std::cerr << "Failed to accept connection" << std::endl;
-//         return ;
-//     }
-    
-//     if (!setupClientSocket(clientFd))
-//     {
-//         close(clientFd);
-//         return ;
-//     }
-    
-//     serverPort = getServerPort(serverFd);
-
-//     logNewConnection(clientAddr, clientFd);
-    
-//     ClientData client(clientFd);
-//     client.setServerPort(serverPort);
-//     // _clients[clientFd] = client;
-//     _clients.insert(std::make_pair(clientFd, client));
-//     if (!registerClientToEpoll(clientFd, epollFd))
-//     {
-//         _clients.erase(clientFd);
-//         close(clientFd);
-//         return;
-//     }
-// }
-
-void HttpServer::acceptNewConnection(int serverFd, int epollFd) 
+void HttpServer::acceptNewConnection(int serverFd) 
 {
     int serverPort;
-    int clientFd;
+    int clientFd;	
     struct sockaddr_in clientAddr;
     socklen_t clientAddrLen;
     
@@ -241,14 +179,14 @@ void HttpServer::acceptNewConnection(int serverFd, int epollFd)
     
     std::cout << "Client added to map, current map size: " << _clients.size() << std::endl;
     
-    if (!registerClientToEpoll(clientFd, epollFd))
-    {
-        std::cout << "Failed to register client to epoll" << std::endl;
-        _clients.erase(clientFd);
-        close(clientFd);
-        return;
-    }
-    
+	try {
+		_epoll.add(clientFd, EPOLLIN);
+	} catch (std::exception& e) {
+		std::cerr << "Failed to add client to epoll" << std::endl;
+		_clients.erase(clientFd);
+		close(clientFd);
+		return;
+	}
     std::cout << "Client successfully registered" << std::endl;
 }
 
@@ -256,7 +194,6 @@ int     HttpServer::getServerPort(int serverFd)
 {
     int port;
 
-    port = 1;
     for (std::map<int, int>::iterator it = _serverSockets.begin(); \
         it != _serverSockets.end(); ++it)
     {
@@ -269,18 +206,18 @@ int     HttpServer::getServerPort(int serverFd)
     return (port);
 }
 
-bool    HttpServer::setupClientSocket(int clientFd)
+bool    HttpServer::setupClientSocket(int fd)
 {
     int flags;
 
-    flags = fcntl(clientFd, F_GETFL, 0);
+    flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0)
     {
         std::cerr << "Failed to get socket flags" << std::endl;
         return (false);
     }
     
-    if (fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) < 0)
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
     {
         std::cerr << "Failed to set non-blocking mode for client" << std::endl;
         return (false);
@@ -299,26 +236,8 @@ void    HttpServer::logNewConnection(const struct sockaddr_in& clientAddr, int c
               << std::endl;
 }
 
-bool    HttpServer::registerClientToEpoll(int clientFd, int epollFd)
-{
-    struct epoll_event ev;
-    
-    memset(&ev, 0, sizeof(ev));
-    ev.events = EPOLLIN;
-    ev.data.fd = clientFd;
-    
-    if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &ev) < 0)
-    {
-        std::cerr << "Failed to add client socket to epoll" << std::endl;
-        return (false);
-    }
-    return (true);
-}
-
 int HttpServer::handleClientRead(int currentFd)
 {
-    struct epoll_event ev;
-    
     std::cout << "=== handleClientRead for fd: " << currentFd << " ===" << std::endl;
     
     // 클라이언트가 맵에 있는지 먼저 확인
@@ -326,7 +245,7 @@ int HttpServer::handleClientRead(int currentFd)
     if (client_it == _clients.end())
     {
         std::cerr << "Client not found in map for fd: " << currentFd << std::endl;
-        closeClientConnection(currentFd, _epollFd);
+        closeClientConnection(currentFd);
         return 1;
     }
     
@@ -350,10 +269,7 @@ int HttpServer::handleClientRead(int currentFd)
         if (client_it->second.getRespReady() == true)
         {
             std::cout << "Response ready, switching to EPOLLOUT" << std::endl;
-            std::memset(&ev, 0, sizeof(ev));
-            ev.events = EPOLLOUT;
-            ev.data.fd = currentFd;
-            epoll_ctl(_epollFd, EPOLL_CTL_MOD, currentFd, &ev);
+			_epoll.modify(currentFd, EPOLLOUT);
         }
         else
         {
@@ -363,7 +279,7 @@ int HttpServer::handleClientRead(int currentFd)
     catch (const std::exception& e)
     {
         std::cerr << "Request processing error: " << e.what() << std::endl;
-        closeClientConnection(currentFd, _epollFd);
+        closeClientConnection(currentFd);
         return 1;
     }
     
@@ -384,23 +300,23 @@ int     HttpServer::handleClientWrite(int currentFd)
         if (errno != EAGAIN && errno != EWOULDBLOCK)
         {
             std::cerr << "Error sending response: " << strerror(errno) << std::endl;
-            closeClientConnection(currentFd,_epollFd);
+            closeClientConnection(currentFd);
         }
         return (1);
     }
 
-    closeClientConnection(currentFd,_epollFd);
+    closeClientConnection(currentFd);
     return (0);
 }
 
-void    HttpServer::closeClientConnection(int clientFd, int epollFd)
+void    HttpServer::closeClientConnection(int fd)
 {
-    std::map<int, ClientData>::iterator it = _clients.find(clientFd);
+    std::map<int, ClientData>::iterator it = _clients.find(fd);
 
     if (it != _clients.end()) {
-        std::cout << "Closing client connection (fd: " << clientFd << ")" << std::endl;
-        epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-        close(clientFd);
+        std::cout << "Closing client connection (fd: " << fd << ")" << std::endl;
+		_epoll.remove(fd);
+        close(fd);
         _clients.erase(it);
     }
 }
@@ -471,23 +387,11 @@ HttpServer::~HttpServer()
 {
 }
 
-// ClientData& HttpServer::getClientData(int currentFd)
-// {
-//     std::map<int, ClientData>::iterator client_it;
-
-//     client_it = _clients.find(currentFd);
-    
-//     if (client_it == _clients.end())
-//         throw InvalidCurrentFd();
-    
-//     return (client_it->second);
-// }
-
-ClientData& HttpServer::getClientData(int currentFd)
+ClientData& HttpServer::getClientData(int fd)
 {
-    std::cout << "Looking for client fd: " << currentFd << " in map of size: " << _clients.size() << std::endl;
+    std::cout << "Looking for client fd: " << fd << " in map of size: " << _clients.size() << std::endl;
     
-    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
+    std::map<int, ClientData>::iterator client_it = _clients.find(fd);
     
     if (client_it == _clients.end())
     {
@@ -512,4 +416,14 @@ const char *HttpServer::FailedSocket::what() const throw()
 const char *HttpServer::InvalidCurrentFd::what() const throw()
 {
     return ("Here's Johnny!");
+}
+
+const char *HttpServer::SocketCreationError::what(void) const throw()
+{
+	return ("Socket creation failed: ");
+}
+
+const char *HttpServer::SocketConfigError::what() const throw()
+{
+	return ("Socket configuration failed: ");
 }

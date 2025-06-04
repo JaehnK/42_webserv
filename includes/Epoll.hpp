@@ -2,6 +2,7 @@
 # define EPOLL_HPP
 
 # include <sys/epoll.h>
+# define MAX_EVENTS 64
 
 class Epoll
 {
@@ -10,7 +11,7 @@ class Epoll
 		int	_maxEvents;
 
 	public:
-		Epoll(int maxEvents = 64);
+		Epoll(int maxEvents = MAX_EVENTS);
 		~Epoll();
 
 		int		wait(epoll_event *events);
