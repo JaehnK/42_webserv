@@ -1,4 +1,4 @@
-CPP = g++-10
+CPP = g++
 CPPFLAGS = -std=c++98 -g
 CPPFLAGS_DEBUG = -fsanitize=address
 NAME = webserv
