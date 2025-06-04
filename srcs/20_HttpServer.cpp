@@ -12,6 +12,7 @@ void    HttpServer::initialize()
     initaliseEpoll(&_epollFd);
 }
 
+
 int    HttpServer::setupServerSockets()
 {
     const   std::vector<Server>& servers = _config.getServers();
@@ -159,40 +160,96 @@ void    HttpServer::run()
 }
 
 
-void    HttpServer::acceptNewConnection(int serverFd, int epollFd) {
-    int                 serverPort;
-    int                 clientFd;
-    struct sockaddr_in  clientAddr;
-    socklen_t           clientAddrLen;
+// void    HttpServer::acceptNewConnection(int serverFd, int epollFd) {
+//     int                 serverPort;
+//     int                 clientFd;
+//     struct sockaddr_in  clientAddr;
+//     socklen_t           clientAddrLen;
+    
+//     clientAddrLen = sizeof(clientAddr);
+//     clientFd = accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
+//     if (clientFd < 0)
+//     {
+//         std::cerr << "Failed to accept connection" << std::endl;
+//         return ;
+//     }
+    
+//     if (!setupClientSocket(clientFd))
+//     {
+//         close(clientFd);
+//         return ;
+//     }
+    
+//     serverPort = getServerPort(serverFd);
+
+//     logNewConnection(clientAddr, clientFd);
+    
+//     ClientData client(clientFd);
+//     client.setServerPort(serverPort);
+//     // _clients[clientFd] = client;
+//     _clients.insert(std::make_pair(clientFd, client));
+//     if (!registerClientToEpoll(clientFd, epollFd))
+//     {
+//         _clients.erase(clientFd);
+//         close(clientFd);
+//         return;
+//     }
+// }
+
+void HttpServer::acceptNewConnection(int serverFd, int epollFd) 
+{
+    int serverPort;
+    int clientFd;
+    struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen;
     
     clientAddrLen = sizeof(clientAddr);
     clientFd = accept(serverFd, (struct sockaddr*)&clientAddr, &clientAddrLen);
     if (clientFd < 0)
     {
         std::cerr << "Failed to accept connection" << std::endl;
-        return ;
+        return;
     }
+    
+    std::cout << "Accepted connection, clientFd: " << clientFd << std::endl;
     
     if (!setupClientSocket(clientFd))
     {
+        std::cout << "Failed to setup client socket" << std::endl;
         close(clientFd);
-        return ;
+        return;
     }
     
     serverPort = getServerPort(serverFd);
+    std::cout << "Server port: " << serverPort << std::endl;
 
     logNewConnection(clientAddr, clientFd);
     
     ClientData client(clientFd);
     client.setServerPort(serverPort);
-    // _clients[clientFd] = client;
-    _clients.insert(std::make_pair(clientFd, client));
+    
+    // 클라이언트를 맵에 추가
+    // std::pair<std::map<int, ClientData>::iterator, bool> result = 
+    _clients[clientFd] = client;
+    
+    // if (!result.second)
+    // {
+    //     std::cerr << "Failed to insert client into map!" << std::endl;
+    //     close(clientFd);
+    //     return;
+    // }
+    
+    std::cout << "Client added to map, current map size: " << _clients.size() << std::endl;
+    
     if (!registerClientToEpoll(clientFd, epollFd))
     {
+        std::cout << "Failed to register client to epoll" << std::endl;
         _clients.erase(clientFd);
         close(clientFd);
         return;
     }
+    
+    std::cout << "Client successfully registered" << std::endl;
 }
 
 int     HttpServer::getServerPort(int serverFd)
@@ -258,41 +315,60 @@ bool    HttpServer::registerClientToEpoll(int clientFd, int epollFd)
     return (true);
 }
 
-
-int     HttpServer::handleClientRead(int currentFd)
+int HttpServer::handleClientRead(int currentFd)
 {
+    struct epoll_event ev;
     
-    struct epoll_event      ev;
-
-    ClientData client = getClientData(currentFd);
+    std::cout << "=== handleClientRead for fd: " << currentFd << " ===" << std::endl;
+    
+    // 클라이언트가 맵에 있는지 먼저 확인
+    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
+    if (client_it == _clients.end())
+    {
+        std::cerr << "Client not found in map for fd: " << currentFd << std::endl;
+        closeClientConnection(currentFd, _epollFd);
+        return 1;
+    }
+    
     try
     {
+        std::cout << "Creating HttpRequest..." << std::endl;
+        client_it->second.setReq(new HttpRequest(currentFd));
         
-        client.setReq(new HttpRequest(currentFd));
-        client.setResp(new HttpResponse(*(client.getReq())));
-        client.setServer(this->_config);
-        client.setLocation();
-        // processRequest(client->second);
+        std::cout << "Creating HttpResponse..." << std::endl;
+        client_it->second.setResp(new HttpResponse(*(client_it->second.getReq())));
+        
+        std::cout << "Setting server..." << std::endl;
+        client_it->second.setServer(this->_config);
+        
+        std::cout << "Setting location..." << std::endl;
+        client_it->second.setLocation();
+        
+        std::cout << "Creating response..." << std::endl;
+        client_it->second.createResponse();
 
-        client.createResponse();
-
-        if (client.getRespReady() == true)
+        if (client_it->second.getRespReady() == true)
         {
+            std::cout << "Response ready, switching to EPOLLOUT" << std::endl;
             std::memset(&ev, 0, sizeof(ev));
             ev.events = EPOLLOUT;
             ev.data.fd = currentFd;
             epoll_ctl(_epollFd, EPOLL_CTL_MOD, currentFd, &ev);
+        }
+        else
+        {
+            std::cout << "Response not ready!" << std::endl;
         }
     }
     catch (const std::exception& e)
     {
         std::cerr << "Request processing error: " << e.what() << std::endl;
         closeClientConnection(currentFd, _epollFd);
-        return (1);
+        return 1;
     }
-    return (0);
+    
+    return 0;
 }
-
 int     HttpServer::handleClientWrite(int currentFd)
 {
     int                                 res;
@@ -301,7 +377,7 @@ int     HttpServer::handleClientWrite(int currentFd)
     client_it = _clients.find(currentFd);
     if (client_it == _clients.end())
         return (1);
-
+    
     res = sendResponse(currentFd);
     if (res < 0)
     {
@@ -328,211 +404,6 @@ void    HttpServer::closeClientConnection(int clientFd, int epollFd)
         _clients.erase(it);
     }
 }
-
-// void    HttpServer::processRequest(ClientData& client)
-// {
-//     try
-//     {
-//         HttpRequest* req = client.parseRequest;
-
-//         //  req loging
-//         // std::cout << "Processing: " << getMethodString(req->getMethod()) << " " << req->getUrl() << std::endl;
-
-//         //  server matching
-//         std::string host = req->getHeaders().count("Host") ? req->getHeaders().at("Host") : "localhost";
-//         client.server = findMatchingServer(host, client.socketFd);
-//         std::cout << "About to find matching location..." << std::endl;
-//         //  Location matching
-//         std::string path = extractPath(req->getUrl());
-//         client.location = findMatchingLocation(client.server, path);
-//         std::cout << "Location found: " << (client.location ? "YES" : "NO") << std::endl;
-//         std::cout << "client.location pointer: " << client.location << std::endl;
-//         if (client.location) {
-//             std::cout << "About to access location methods..." << std::endl;
-            
-//             // isMethodAllowed 호출 전에 디버그 추가
-//             std::cout << "About to call isMethodAllowed..." << std::endl;
-//         }
-//         if (!isMethodAllowd(client._location, req->getMethod()))
-//         {
-//             std::cout << "Method not allowed" << std::endl;
-//             client.response = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 18\r\n\r\nMethod Not Allowed";
-//             client.responseReady = true;
-//             return ;
-//         }
-//         std::cout << "Method is allowed, proceeding..." << std::endl;
-
-//         // 메서드별 처리
-//         std::cout << "About to enter switch statement..." << std::endl;
-//         switch (req->getMethod())
-//         {
-//             case METHOD_GET:
-//                 std::cout << "Calling handleGetRequest..." << std::endl;
-//                 handleGetRequest(client);
-//                 std::cout << "handleGetRequest completed" << std::endl;
-//                 break;
-//             case METHOD_POST:
-//                 std::cout << "Calling handlePostRequest..." << std::endl;
-//                 handlePostRequest(client);
-//                 break;
-//             case METHOD_DELETE:
-//                 std::cout << "Calling handleDeleteRequest..." << std::endl;
-//                 handleDeleteRequest(client);
-//                 break;
-//             default:
-//                 std::cout << "Unknown method, sending 501..." << std::endl;
-//                 client.response = "HTTP/1.1 501 Not Implemented\r\nContent-Length: 15\r\n\r\nNot Implemented";
-//                 break;
-//         }
-        
-//         std::cout << "About to set responseReady..." << std::endl;
-//         client.responseReady = true;
-//         std::cout << "Request processed successfully" << std::endl;
-//     }
-//     catch(const std::exception& e)
-//     {
-//         std::cerr << "Error processing request: " << e.what() << std::endl;
-//         client.response = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 21\r\n\r\nInternal Server Error";
-//         client.responseReady = true;
-//     }
-    
-// }
-
-
-// void    HttpServer::handleGetRequest(ClientData& client)
-// {
-//     std::cout << "=== handleGetRequest START ===" << std::endl;
-    
-//     // std::cout << "client.parseRequest pointer: " << client.parseRequest << std::endl;
-//     if (!client.parseRequest) {
-//         std::cout << "ERROR: client.parseRequest is NULL!" << std::endl;
-//         return;
-//     }
-//     HttpRequest* req = client.parseRequest;
-//     std::cout << "Got HttpRequest pointer: " << req << std::endl;
-    
-//     std::cout << "About to call extractPath..." << std::endl;
-//     std::string path = extractPath(req->getUrl());
-//     std::cout << "Extracted path: [" << path << "]" << std::endl;
-
-//     if (path == "/")
-//         path = "/index.html";
-//     std::cout << "Final path: [" << path << "]" << std::endl;
-//     // std::string filePath = buildFilePath(client.location, path);
-//     // std::ifstream file(filePath.c_str());
-//     std::cout << "About to call buildFilePath..." << std::endl;
-//     std::cout << "client.location pointer: " << client.location << std::endl;
-    
-//     // buildFilePath 대신 직접 경로 설정으로 테스트
-//     std::string filePath = "./www" + path;
-//     std::cout << "Using direct file path: [" << filePath << "]" << std::endl;
-    
-//     std::cout << "About to open file..." << std::endl;
-//     std::ifstream file(filePath.c_str());
-
-//     if (file.good())
-//     {
-//         std::cout << "File opened successfully" << std::endl;
-//         std::ostringstream buffer;
-//         buffer << file.rdbuf();
-//         std::string content = buffer.str();
-//         file.close();
-//         std::cout << "File read successfully, size: " << content.length() << std::endl;
-//         std::string contentType = "text/html";  // 기본값
-//         size_t dotPos = filePath.find_last_of('.');
-//         if (dotPos != std::string::npos) {
-//             std::string extension = filePath.substr(dotPos);
-//             if (extension == ".css")
-//                 contentType = "text/css";
-//             else if (extension == ".js")
-//                 contentType = "application/javascript";
-//             else if (extension == ".html" || extension == ".htm")
-//                 contentType = "text/html";
-//             else if (extension == ".png")
-//                 contentType = "image/png";
-//             else if (extension == ".jpg" || extension == ".jpeg")
-//                 contentType = "image/jpeg";
-//         }
-//         std::ostringstream response;
-//         response << "HTTP/1.1 200 OK\r\n";
-//         response << "Content-Type: " << contentType << "\r\n";  // 동적 Content-Type
-//         response << "Content-Length: " << content.length() << "\r\n";
-//         response << "\r\n";
-//         response << content;
-
-//         client.response = response.str();
-//         std::cout << "Response prepared, size: " << client.response.length() << std::endl;
-//         std::cout << "Serving file: " << filePath << std::endl;
-//     }
-//     else
-//     {
-//         std::cout << "File not found: " << filePath << std::endl;
-//         std::string notFound = "<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
-//         std::ostringstream  response;
-//         response << "HTTP/1.1 404 Not Found\r\n";
-//         response << "Content-Type: text/html\r\n";
-//         response << "Content-Length: " << notFound.length() << "\r\n";
-//         response << "\r\n";
-//         response << notFound;
-
-//         client.response = response.str();
-//         // std::cout << "File not found: " << filePath << std::endl;
-//     }
-//     std::cout << "=== handleGetRequest END ===" << std::endl;
-// }
-
-// void    HttpServer::handlePostRequest(ClientData& client)
-// {
-//     HttpRequest* req = client.parseRequest;
-//     std::string body = req->getBody();
-
-//     std::cout << "POST data received: " << body.length() << " bytes" << std::endl;
-
-//     std::string responseBody = "POST data received successfully";
-//     std::ostringstream  response;
-//     response << "HTTP/1.1 200 OK\r\n";
-//     response << "Content-Type: text/plain\r\n";
-//     response << "Content-Length: " << responseBody.length() << "\r\n";
-//     response << "\r\n";
-//     response << responseBody;
-
-//     client.response = response.str();
-// }
-
-// void    HttpServer::handleDeleteRequest(ClientData& client)
-// {
-//     HttpRequest* req = client.parseRequest;
-//     std::string path = extractPath(req->getUrl());
-
-//     std::cout << "DELETE request for: " << path << std::endl;
-
-//     std::string responseBody = "DELETE request processed";
-//     std::ostringstream response;
-//     response << "HTTP/1.1 200 OK\r\n";
-//     response << "Content-Type: text/plain\r\n";
-//     response << "Content-Length: " << responseBody.length() << "\r\n";
-//     response << "\r\n";
-//     response << responseBody;
-
-//     client.response = response.str();
-// }
-
-// void    HttpServer::handleCgiRequest(ClientData& client, LocationCGI* cgiLocation)
-// {
-//     (void)cgiLocation;
-//     client.response = "HTTP/1.1 501 Not Implemented\r\nContent-Length: 15\r\n\r\nCGI Not Ready";
-// }
-
-// std::string HttpServer::getMethodString(HttpMethod method)
-// {
-//     switch (method)
-//     {
-//         case METHOD_GET: return "GET";
-//         case METHOD_POST: return "POST";
-//         case METHOD_DELETE: return "DELETE";
-//         default: return "UNKNOWN";
-//     }
-// }
 
 std::string HttpServer::extractPath(const std::string& url)
 {
@@ -600,16 +471,37 @@ HttpServer::~HttpServer()
 {
 }
 
+// ClientData& HttpServer::getClientData(int currentFd)
+// {
+//     std::map<int, ClientData>::iterator client_it;
+
+//     client_it = _clients.find(currentFd);
+    
+//     if (client_it == _clients.end())
+//         throw InvalidCurrentFd();
+    
+//     return (client_it->second);
+// }
+
 ClientData& HttpServer::getClientData(int currentFd)
 {
-    std::map<int, ClientData>::iterator client_it;
-
-    client_it = _clients.find(currentFd);
+    std::cout << "Looking for client fd: " << currentFd << " in map of size: " << _clients.size() << std::endl;
+    
+    std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
     
     if (client_it == _clients.end())
+    {
+        std::cout << "Available fds in map: ";
+        for (std::map<int, ClientData>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+        {
+            std::cout << it->first << " ";
+        }
+        std::cout << std::endl;
+        
         throw InvalidCurrentFd();
+    }
     
-    return (client_it->second);
+    return client_it->second;
 }
 
 const char *HttpServer::FailedSocket::what() const throw()

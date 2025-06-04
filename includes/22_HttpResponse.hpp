@@ -40,7 +40,5 @@ class HttpResponse
         void    createPostResponse();
         void    createDeleteResponse();
 
-
         void    assembleMsg();
-        
 };

@@ -117,38 +117,33 @@ void    HttpResponse::initStaticVars()
 
 bool    HttpResponse::checkAllowedMethod(std::vector<std::string> limits)
 {
-    bool        check;
-    std::string methodStr;
-    
     if (limits.empty())
-        check = true;
-    
+        return true;
+    std::string methodStr;
     switch (this->_reqMethod)
     {
         case METHOD_GET:    
             methodStr = "GET"; 
             break;
-        
         case METHOD_POST:  
             methodStr = "POST";
             break;
-        
         case METHOD_DELETE: 
             methodStr = "DELETE";
             break;
-        
         default: 
-            check = false;
+            _statCode = 405;
+            _body = "<!DOCTYPE html><html><body><h1>405 Method Not Allowed</h1></body></html>";
+            return false;
     }
-    check = std::find(limits.begin(), limits.end(), methodStr) != limits.end();
-
+    
+    bool check = std::find(limits.begin(), limits.end(), methodStr) != limits.end();
     if (!check)
     {
         _statCode = 405;
-        _body = "Internal Server Error";
-
+        _body = "<!DOCTYPE html><html><body><h1>405 Method Not Allowed</h1></body></html>";
     }
-    return (check);
+    return check;
 }
 
 void    HttpResponse::handleMethod()
@@ -184,14 +179,9 @@ void    HttpResponse::createGetResponse()
     {
         std::ostringstream buffer;
         buffer << file.rdbuf();
-        _body = buffer.str();
+        this->_body = buffer.str();
         file.close();
-    }
-    else
-    {
-        this->_statCode = 404;
-        this->_mimeType = ".html";
-    }
+        this->_statCode = 200;
         size_t dotPos = filePath.find_last_of('.');
         if (dotPos != std::string::npos) 
         {
@@ -199,7 +189,13 @@ void    HttpResponse::createGetResponse()
             this->_mimeType = extension;
         }
 
-    
+    }
+    else
+    {
+        this->_statCode = 404;
+        this->_mimeType = ".html";
+        this->_body = "Not Found";
+    }
 }
 
 

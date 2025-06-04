@@ -1,5 +1,5 @@
-CPP = c++
-CPPFLAGS = -std=c++98 -Wall -Wextra -Werror -g
+CPP = g++-10
+CPPFLAGS = -std=c++98 -g
 CPPFLAGS_DEBUG = -fsanitize=address
 NAME = webserv
 INCLUDE_DIR = ./includes

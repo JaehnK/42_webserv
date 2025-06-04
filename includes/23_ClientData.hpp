@@ -13,9 +13,9 @@ class ClientData
         HttpRequest*    _req;
         HttpResponse*   _resp;
 
-        ClientData();
-
+        
     public:
+        ClientData();
         ClientData(int clientFd);
         ClientData(const ClientData& rhs);
         ClientData& operator=(const ClientData& rhs);
@@ -29,6 +29,7 @@ class ClientData
         void    setReq(HttpRequest* req);
         void    setResp(HttpResponse* resp);
 
+        int             getServerPort() const;
         int             getSocketFd() const;
         bool            getReqReady() const;
         bool            getRespReady() const;
