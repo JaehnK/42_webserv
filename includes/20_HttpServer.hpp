@@ -1,5 +1,6 @@
 #pragma once
 #include "webserv.hpp"
+#include "Epoll.hpp"
 
 class HttpServer
 {
@@ -8,6 +9,8 @@ class HttpServer
         Config                      _config;
         std::map<int, int>          _serverSockets;
         std::map<int, ClientData>   _clients;
+
+		Epoll 						_epoll;
 
         int     setupServerSockets();
         void    initaliseEpoll(int *epollFd);
