@@ -1,5 +1,5 @@
-CPP = g++-10
-CPPFLAGS = -std=c++98 -g
+CPP = g++
+CPPFLAGS = -std=c++98
 CPPFLAGS_DEBUG = -fsanitize=address
 NAME = webserv
 INCLUDE_DIR = ./includes
@@ -22,7 +22,8 @@ HEADERS = webserv.hpp \
 		  20_HttpServer.hpp \
 		  21_HttpRequest.hpp \
 		  22_HttpResponse.hpp \
-		  23_ClientData.hpp
+		  23_ClientData.hpp \
+		  Epoll.hpp \
 
 SRCS = webserv.cpp \
        00_ServerManager.cpp \
@@ -39,6 +40,7 @@ SRCS = webserv.cpp \
 	   21_HttpRequest.cpp \
 	   22_HttpResponse.cpp \
 	   23_ClientData.cpp \
+	   Epoll.cpp \
 
 
 SRCS_DIR = ./srcs

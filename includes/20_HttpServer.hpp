@@ -1,37 +1,42 @@
 #pragma once
 #include "webserv.hpp"
+#include "Epoll.hpp"
 
 class HttpServer
 {
     private:
-        int                         _epollFd;
+		Epoll 						_epoll;
+		epoll_event					_events[MAX_EVENTS];
         Config                      _config;
         std::map<int, int>          _serverSockets;
         std::map<int, ClientData>   _clients;
 
         int     setupServerSockets();
-        void    initaliseEpoll(int *epollFd);
-        bool    isServerSocket(int currentFd);
+		int     createServerSocket(int port);
+		void	configureSocket(int fd);
+		void    bindAndListen(int fd, int port);
+
+        void    initializeEpoll();
+        bool    isServerSocket(int fd);
         
-        void    acceptNewConnection(int serverFd, int epollFd);
+        void    acceptNewConnection(int serverFd);
         int     getServerPort(int serverFd);
         bool    setupClientSocket(int client);
         void    logNewConnection(const struct sockaddr_in& clientAddr, int clientFd);
-        bool    registerClientToEpoll(int clientFd, int epollFd);
-
+		void	handleEvent(const epoll_event& event);
         int     handleClientRead(int currentFd);
         int     handleClientWrite(int currentFd);
         
         void    processRequest(ClientData& client);
         void    buildResponse(ClientData& client);
         int     sendResponse(int clinetFd);
-        void    closeClientConnection(int clientFd, int epollFd);
+        void    closeClientConnection(int clientFd);
 
         //  요청 처리
-        void        handleGetRequest(ClientData& client);
-        void        handlePostRequest(ClientData& client);
-        void        handleDeleteRequest(ClientData& client);
-        void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
+        // void        handleGetRequest(ClientData& client);
+        // void        handlePostRequest(ClientData& client);
+        // void        handleDeleteRequest(ClientData& client);
+        // void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
 
         //  utils
         std::string getMethodString(HttpMethod method);
@@ -58,5 +63,15 @@ class HttpServer
             const char *what(void) const throw();
             
         };
+		class	SocketCreationError: public std::exception
+		{
+			public:
+				const char *what(void) const throw();
+		};
+		class	SocketConfigError: public std::exception
+		{
+			public:
+				const char *what(void) const throw();
+		};
         static std::string extractPath(const std::string& url);
 };
