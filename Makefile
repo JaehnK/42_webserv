@@ -24,6 +24,7 @@ HEADERS = webserv.hpp \
 		  22_HttpResponse.hpp \
 		  23_ClientData.hpp \
 		  Epoll.hpp \
+		  ServerSocket.hpp \
 
 SRCS = webserv.cpp \
        00_ServerManager.cpp \
@@ -41,6 +42,7 @@ SRCS = webserv.cpp \
 	   22_HttpResponse.cpp \
 	   23_ClientData.cpp \
 	   Epoll.cpp \
+	   ServerSocket.cpp \
 
 
 SRCS_DIR = ./srcs
