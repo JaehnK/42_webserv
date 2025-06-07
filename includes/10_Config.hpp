@@ -25,7 +25,7 @@ class Config
         // Getters
         std::string         getFileName() const;
         int                 getClientMaxBodySize() const;
-        std::vector<Server> getServers() const;
+        const std::vector<Server> &getServers() const;
 };
 
 std::ostream	&operator<<(std::ostream& os, const Config& conf);

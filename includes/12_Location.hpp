@@ -41,8 +41,10 @@ class Location
         void    addLocations(Location* loc);
 
         // Getters
-        locationType                                getType();
+        std::vector<Location *>                     getLocations() const;
+        locationType                                getType() const;
         std::string                                 getPath() const;
+        std::string                                 getPath();
         int                                         getClientMaxBodySize() const;
         std::string                                 getRoot() const;
         std::string                                 getIndex() const;
@@ -85,6 +87,7 @@ class Location
         virtual std::string                         getPass() const;
         virtual std::string                         getCgiIndx() const;
         virtual std::map<std::string, std::string>  getParam() const;
+
         virtual bool                                hasPass() const;
         virtual bool                                hasParam() const;
         

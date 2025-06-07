@@ -18,6 +18,8 @@ Location&   Location::operator=(const Location& rhs)
 {
     if (this != &rhs)
     {
+        this->_locType = rhs.getType();
+        this->_locations = rhs.getLocations();
         this->_path = rhs.getPath();
         this->_clientMaxBodySize = rhs.getClientMaxBodySize();
         this->_root = rhs.getRoot();
@@ -74,7 +76,12 @@ void    Location::addLocations(Location* loc)
     this->_locations.push_back(loc);
 }
 
-locationType Location::getType()
+std::vector<Location *> Location::getLocations() const
+{
+    return (this->_locations);
+}
+
+locationType Location::getType() const
 {
     return this->_locType;
 }
@@ -83,6 +90,16 @@ std::string Location::getPath() const
 {
     // if (this->hasPath() == false)
     //     throw DataNotFoundException();
+    return (this->_path);
+}
+
+std::string Location::getPath()
+{
+    std::string fuck = "fuck";
+    std::cout << this->_path << "aaaaaaaaa" << std::endl;
+    std::cout << "getPath called! _path: " << (this->hasPath() ? this->_path : fuck) << "\n";
+    if (this->hasPath() == false)
+        throw DataNotFoundException();
     return (this->_path);
 }
 

@@ -95,7 +95,7 @@ void	FileParser::openFile()
 		throw FileNotOpenedException();
 	if (this->_currentPos != 0)
 	{
-		std::cout << "File Open number: " << this->_currentPos << std::endl;
+		// std::cout << "File Open number: " << this->_currentPos << std::endl;
 		_ifs.seekg(this->_currentPos);
 	}
 }
@@ -115,7 +115,7 @@ void    FileParser::Parse()
 		buf = trimBuf(buf);
 		if (buf.empty())
 			continue;
-		std::cout << "Top: " <<buf << std::endl;
+		// std::cout << "Top: " << buf << std::endl;
 		splitted = preprocessToken(buf);
 		
 		if (splitted.at(0) == "client_max_body_size")
@@ -144,7 +144,7 @@ void    FileParser::Parse()
 			{
 				if (std::isdigit(*it) == false)
 				{
-					std::cerr << "not number" << std::endl;
+					// std::cerr << "not number" << std::endl;
 					throw SyntaxErrorException();
 				}
 			}
@@ -225,7 +225,7 @@ void	FileParser::makeServerBlock()
 		buf = trimBuf(buf);
 		if (buf.empty())
 			continue;
-		std::cout << "Serv: " << buf << std::endl;
+		// std::cout << "Serv: " << buf << std::endl;
 		splitted = preprocessToken(buf);
 
 		if (_state == LOCATION_KEYWORD)
@@ -340,7 +340,7 @@ Location*	FileParser::makeLocationBlock(std::string path)
 			continue;
 		
 		splitted = preprocessToken(buf);
-		std::cout << "Location: " << buf << std::endl;
+		// std::cout << "Location: " << buf << std::endl;
 		// size_t test = splitted.at(0) == "}";
 		// std::cout << "Close test: " << test << std::endl;
 		if (_state == LOCATION_KEYWORD)
@@ -357,7 +357,7 @@ Location*	FileParser::makeLocationBlock(std::string path)
 		}
 		if (splitted.at(0) == "}")
 		{
-			std::cout << "loc block end" << std::endl;
+			// std::cout << "loc block end" << std::endl;
 			break ;
 		}
 		if (splitted.at(0) == "location")
@@ -396,18 +396,18 @@ Location*	FileParser::makeLocationBlock(std::string path)
 		else if (splitted.at(0) == "root")
 		{
 			locBlock->setRoot(splitted.at(0));
-			std::cout << "Root : " << locBlock->getRoot() << std::endl;
+			// std::cout << "Root : " << locBlock->getRoot() << std::endl;
 		}
 		else if (splitted.at(0) == "index")
 		{
 			locBlock->setIndex(splitted.at(1));
-			std::cout << "Index: "<<locBlock->getIndex() << std::endl;
+			// std::cout << "Index: "<<locBlock->getIndex() << std::endl;
 		}
 		else if (splitted.at(0) == "limit_except")
 		{
 			for (size_t i = 1; i < splitted.size(); i++)
 				locBlock->addLimitExcept(splitted.at(i));
-			std::cout << "limit except" << std::endl; 
+			// std::cout << "limit except" << std::endl; 
 		}
 		else if (splitted.at(0) == "error_page")
 			locBlock->addErrorPage(std::atoi(splitted.at(1).c_str()), splitted.at(2));

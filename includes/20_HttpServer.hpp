@@ -1,51 +1,77 @@
 #pragma once
 #include "webserv.hpp"
+#include "Epoll.hpp"
 
 class HttpServer
 {
-private:
-    struct ClientData
-    {
-        int         socketFd;
-        std::string request;
-        std::string response;
-        bool        requestComplete;
-        bool        responseReady;
-        Server*     server;
-        Location*   location;
-    };
+    private:
+		Epoll 						_epoll;
+		epoll_event					_events[MAX_EVENTS];
+        Config                      _config;
+        std::map<int, int>          _serverSockets;
+        std::map<int, ClientData>   _clients;
 
-    Config  _config;
-    std::map<int, int> _serverSockets;
-    std::map<int, ClientData>   _clients;
-    int     _epollFd;
+        int     setupServerSockets();
+		int     createServerSocket(int port);
+		void	configureSocket(int fd);
+		void    bindAndListen(int fd, int port);
 
-    int     setupServerSockets();
-    void    acceptNewConnection(int serverFd, int epollFd);
-    int    handleClientRequest(int clientFd);
-    void    processRequset(ClientData& client);
-    void    buildResponse(ClientData& client);
-    int     sendResponse(int clinetFd);
-    void    closeClientConnection(int clientFd, int epollFd);
+        void    initializeEpoll();
+        bool    isServerSocket(int fd);
+        
+        void    acceptNewConnection(int serverFd);
+        int     getServerPort(int serverFd);
+        bool    setupClientSocket(int client);
+        void    logNewConnection(const struct sockaddr_in& clientAddr, int clientFd);
+		void	handleEvent(const epoll_event& event);
+        int     handleClientRead(int currentFd);
+        int     handleClientWrite(int currentFd);
+        
+        void    processRequest(ClientData& client);
+        void    buildResponse(ClientData& client);
+        int     sendResponse(int clinetFd);
+        void    closeClientConnection(int clientFd);
 
-    //  요청 처리
-    Server*     findMatchingServer(const std::string& host, int port);
-    Location*   findMatchingLocation(Server* server, const std::string& path);
-    void        handleGetRequest(ClientData& client);
-    void        handlePostRequest(ClientData& client);
-    void        handleDeleteRequest(ClientData& client);
-    void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
+        //  요청 처리
+        // void        handleGetRequest(ClientData& client);
+        // void        handlePostRequest(ClientData& client);
+        // void        handleDeleteRequest(ClientData& client);
+        // void        handleCgiRequest(ClientData& client, LocationCGI* cgiLocation);
 
-public:
-    HttpServer(const Config& config);
-    ~HttpServer();
-
-    void    initialize();   //  소켓 바인딩
-    void    run();  //  서버 루프
-
-    class   FailedSocket: public std::exception
-    {
-        public:
+        //  utils
+        std::string getMethodString(HttpMethod method);
+        std::string buildFilePath(const Location* location, const std::string& path);
+        bool        isMethodAllowd(const Location* location, HttpMethod method);
+    
+    public:
+        HttpServer(const Config& config);
+        ~HttpServer();
+        
+        ClientData& getClientData(int currentFd);
+        void        initialize();   //  소켓 바인딩
+        void        run();  //  서버 루프
+        
+        class   FailedSocket: public std::exception
+        {
+            public:
             const char *what(void) const throw();
-    };
+        };
+        
+        class   InvalidCurrentFd: public std::exception
+        {
+            public:
+            const char *what(void) const throw();
+            
+        };
+		class	SocketCreationError: public std::exception
+		{
+			public:
+				const char *what(void) const throw();
+		};
+		class	SocketConfigError: public std::exception
+		{
+			public:
+				const char *what(void) const throw();
+		};
+        static std::string extractPath(const std::string& url);
 };

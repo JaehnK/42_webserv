@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>42webserv HTTP 테스터</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tester-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .test-section:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .section-title {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .response-section {
+            grid-column: 1 / -1;
+            background: #1a1a1a;
+            color: #00ff00;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .response-title {
+            color: #00ff00;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .response-content {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #333;
+        }
+
+        .header-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .add-header {
+            background: #28a745;
+            padding: 8px 15px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .header-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 10px;
+        }
+
+        .remove-header {
+            background: #dc3545;
+            padding: 8px 12px;
+            font-size: 12px;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .cgi-params {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+
+        @media (max-width: 768px) {
+            .tester-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 42webserv HTTP 테스터</h1>
+        
+        <div class="tester-grid">
+            <!-- HTTP 메소드 테스터 -->
+            <div class="test-section">
+                <h2 class="section-title">📡 HTTP 메소드 테스터</h2>
+                
+                <div class="form-group">
+                    <label for="method">HTTP 메소드:</label>
+                    <select id="method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="HEAD">HEAD</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="url">URL:</label>
+                    <input type="text" id="url" value="http://localhost:8080/" placeholder="서버 URL을 입력하세요">
+                </div>
+
+                <div class="form-group">
+                    <label>커스텀 헤더:</label>
+                    <div id="headers-container">
+                        <div class="header-pair">
+                            <input type="text" placeholder="헤더 이름" class="header-name">
+                            <input type="text" placeholder="헤더 값" class="header-value">
+                            <button type="button" class="remove-header" onclick="removeHeader(this)">삭제</button>
+                        </div>
+                    </div>
+                    <button type="button" class="add-header" onclick="addHeader()">헤더 추가</button>
+                </div>
+
+                <div class="form-group">
+                    <label for="body">요청 본문 (POST/PUT):</label>
+                    <textarea id="body" placeholder='{"key": "value"} 또는 일반 텍스트'></textarea>
+                </div>
+
+                <button onclick="sendHttpRequest()">🚀 요청 전송</button>
+            </div>
+
+            <!-- 파일 업로드 테스터 -->
+            <div class="test-section">
+                <h2 class="section-title">📁 파일 업로드 테스터</h2>
+                
+                <div class="form-group">
+                    <label for="upload-url">업로드 URL:</label>
+                    <input type="text" id="upload-url" value="http://localhost:8080/upload" placeholder="업로드 엔드포인트">
+                </div>
+
+                <div class="form-group">
+                    <label for="file-input">파일 선택:</label>
+                    <input type="file" id="file-input" multiple>
+                </div>
+
+                <div class="form-group">
+                    <label for="upload-method">업로드 방식:</label>
+                    <select id="upload-method">
+                        <option value="multipart">Multipart Form Data</option>
+                        <option value="binary">Binary Upload</option>
+                    </select>
+                </div>
+
+                <button onclick="uploadFile()">📤 파일 업로드</button>
+            </div>
+
+            <!-- CGI 테스터 -->
+            <div class="test-section">
+                <h2 class="section-title">⚙️ CGI 스크립트 테스터</h2>
+                
+                <div class="form-group">
+                    <label for="cgi-url">CGI URL:</label>
+                    <input type="text" id="cgi-url" value="http://localhost:8080/cgi-bin/test.py" placeholder="CGI 스크립트 경로">
+                </div>
+
+                <div class="form-group">
+                    <label>CGI 파라미터:</label>
+                    <div class="cgi-params">
+                        <input type="text" id="cgi-param-name" placeholder="파라미터 이름">
+                        <input type="text" id="cgi-param-value" placeholder="파라미터 값">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cgi-method">CGI 메소드:</label>
+                    <select id="cgi-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="cgi-body">CGI 입력 데이터:</label>
+                    <textarea id="cgi-body" placeholder="POST 요청 시 CGI로 전달할 데이터"></textarea>
+                </div>
+
+                <button onclick="testCGI()">🔧 CGI 실행</button>
+            </div>
+
+            <!-- 서버 상태 테스터 -->
+            <div class="test-section">
+                <h2 class="section-title">🔍 서버 상태 테스터</h2>
+                
+                <div class="form-group">
+                    <label for="status-url">테스트할 경로:</label>
+                    <input type="text" id="status-url" value="http://localhost:8080/" placeholder="상태를 확인할 URL">
+                </div>
+
+                <button onclick="checkServerStatus()">📊 서버 상태 확인</button>
+                <button onclick="testErrorPages()">❌ 에러 페이지 테스트</button>
+                <button onclick="testDirectoryListing()">📋 디렉토리 리스팅 테스트</button>
+            </div>
+        </div>
+
+        <!-- 응답 결과 표시 -->
+        <div class="response-section">
+            <h2 class="response-title">📋 응답 결과</h2>
+            <div id="response-content" class="response-content">여기에 서버 응답이 표시됩니다...</div>
+        </div>
+    </div>
+
+    <script>
+        let requestCounter = 0;
+
+        function addHeader() {
+            const container = document.getElementById('headers-container');
+            const headerPair = document.createElement('div');
+            headerPair.className = 'header-pair';
+            headerPair.innerHTML = `
+                <input type="text" placeholder="헤더 이름" class="header-name">
+                <input type="text" placeholder="헤더 값" class="header-value">
+                <button type="button" class="remove-header" onclick="removeHeader(this)">삭제</button>
+            `;
+            container.appendChild(headerPair);
+        }
+
+        function removeHeader(button) {
+            button.parentElement.remove();
+        }
+
+        function getCustomHeaders() {
+            const headers = {};
+            const headerPairs = document.querySelectorAll('.header-pair');
+            
+            headerPairs.forEach(pair => {
+                const name = pair.querySelector('.header-name').value.trim();
+                const value = pair.querySelector('.header-value').value.trim();
+                if (name && value) {
+                    headers[name] = value;
+                }
+            });
+            
+            return headers;
+        }
+
+        function logResponse(response, body, requestInfo) {
+            requestCounter++;
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = response.status >= 200 && response.status < 300 ? 'status-success' : 
+                               response.status >= 400 ? 'status-error' : 'status-warning';
+            
+            let log = `\n=== 요청 #${requestCounter} [${timestamp}] ===\n`;
+            log += `<span class="status-indicator ${statusClass}"></span>`;
+            log += `${requestInfo.method} ${requestInfo.url}\n`;
+            log += `상태: ${response.status} ${response.statusText}\n`;
+            
+            // 응답 헤더
+            log += `\n응답 헤더:\n`;
+            for (let [key, value] of response.headers.entries()) {
+                log += `  ${key}: ${value}\n`;
+            }
+            
+            // 응답 본문
+            log += `\n응답 본문:\n`;
+            if (typeof body === 'string') {
+                log += body.substring(0, 2000) + (body.length > 2000 ? '\n... (응답이 잘림)' : '');
+            } else {
+                log += '[바이너리 데이터]';
+            }
+            
+            log += `\n${'='.repeat(50)}\n`;
+            
+            const responseContent = document.getElementById('response-content');
+            responseContent.innerHTML += log;
+            responseContent.scrollTop = responseContent.scrollHeight;
+        }
+
+        async function sendHttpRequest() {
+            const method = document.getElementById('method').value;
+            const url = document.getElementById('url').value;
+            const body = document.getElementById('body').value;
+            const customHeaders = getCustomHeaders();
+
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...customHeaders
+                }
+            };
+
+            if (method === 'POST' || method === 'PUT') {
+                if (body) {
+                    options.body = body;
+                }
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const responseBody = await response.text();
+                
+                logResponse(response, responseBody, { method, url });
+            } catch (error) {
+                const errorLog = `\n❌ 요청 실패: ${error.message}\n`;
+                document.getElementById('response-content').innerHTML += errorLog;
+            }
+        }
+
+        async function uploadFile() {
+            const url = document.getElementById('upload-url').value;
+            const fileInput = document.getElementById('file-input');
+            const uploadMethod = document.getElementById('upload-method').value;
+
+            if (!fileInput.files.length) {
+                alert('파일을 선택해주세요!');
+                return;
+            }
+
+            const formData = new FormData();
+            
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('files', fileInput.files[i]);
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const responseBody = await response.text();
+                logResponse(response, responseBody, { method: 'POST', url });
+            } catch (error) {
+                const errorLog = `\n❌업로드 실패: ${error.message}\n`;
+                document.getElementById('response-content').innerHTML += errorLog;
+            }
+        }
+
+        async function testCGI() {
+            const url = document.getElementById('cgi-url').value;
+            const method = document.getElementById('cgi-method').value;
+            const body = document.getElementById('cgi-body').value;
+            const paramName = document.getElementById('cgi-param-name').value;
+            const paramValue = document.getElementById('cgi-param-value').value;
+
+            let finalUrl = url;
+            
+            if (method === 'GET' && paramName && paramValue) {
+                finalUrl += `?${paramName}=${encodeURIComponent(paramValue)}`;
+            }
+
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            };
+
+            if (method === 'POST' && body) {
+                options.body = body;
+            }
+
+            try {
+                const response = await fetch(finalUrl, options);
+                const responseBody = await response.text();
+                
+                logResponse(response, responseBody, { method, url: finalUrl });
+            } catch (error) {
+                const errorLog = `\n❌ CGI 실행 실패: ${error.message}\n`;
+                document.getElementById('response-content').innerHTML += errorLog;
+            }
+        }
+
+        async function checkServerStatus() {
+            const url = document.getElementById('status-url').value;
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url, { method: 'HEAD' });
+                const endTime = Date.now();
+                
+                const statusLog = `\n🔍 서버 상태 체크:\n`;
+                const log = statusLog + `응답 시간: ${endTime - startTime}ms\n상태: ${response.status}\n서버: ${response.headers.get('Server') || 'Unknown'}\n`;
+                
+                document.getElementById('response-content').innerHTML += log;
+            } catch (error) {
+                const errorLog = `\n❌ 서버 연결 실패: ${error.message}\n`;
+                document.getElementById('response-content').innerHTML += errorLog;
+            }
+        }
+
+        async function testErrorPages() {
+            const baseUrl = document.getElementById('status-url').value.replace(/\/$/, '');
+            const errorUrls = [
+                `${baseUrl}/nonexistent-page`,
+                `${baseUrl}/forbidden-directory`,
+                `${baseUrl}/server-error-test`
+            ];
+
+            for (const url of errorUrls) {
+                try {
+                    const response = await fetch(url);
+                    const body = await response.text();
+                    logResponse(response, body, { method: 'GET', url });
+                } catch (error) {
+                    const errorLog = `\n❌ 에러 페이지 테스트 실패 (${url}): ${error.message}\n`;
+                    document.getElementById('response-content').innerHTML += errorLog;
+                }
+            }
+        }
+
+        async function testDirectoryListing() {
+            const baseUrl = document.getElementById('status-url').value.replace(/\/$/, '');
+            const dirUrl = `${baseUrl}/`;
+
+            try {
+                const response = await fetch(dirUrl);
+                const body = await response.text();
+                logResponse(response, body, { method: 'GET', url: dirUrl });
+            } catch (error) {
+                const errorLog = `\n❌ 디렉토리 리스팅 테스트 실패: ${error.message}\n`;
+                document.getElementById('response-content').innerHTML += errorLog;
+            }
+        }
+
+        // 초기 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('response-content').innerHTML = '42webserv 테스터가 준비되었습니다!\n서버를 시작하고 테스트를 진행해보세요. 🚀\n';
+        });
+    </script>
+</body>
+</html>

@@ -58,7 +58,7 @@ int Config::getClientMaxBodySize() const
     return (this->_clientMaxBodySize);
 }
 
-std::vector<Server> Config::getServers() const
+const std::vector<Server> &Config::getServers() const
 {
     return (this->_servers);
 }
