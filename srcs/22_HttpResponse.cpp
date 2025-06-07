@@ -122,13 +122,13 @@ bool    HttpResponse::checkAllowedMethod(std::vector<std::string> limits)
     std::string methodStr;
     switch (this->_reqMethod)
     {
-        case METHOD_GET:    
+        case GET:    
             methodStr = "GET"; 
             break;
-        case METHOD_POST:  
+        case POST:  
             methodStr = "POST";
             break;
-        case METHOD_DELETE: 
+        case DELETE: 
             methodStr = "DELETE";
             break;
         default: 
@@ -150,15 +150,15 @@ void    HttpResponse::handleMethod()
 {
     switch  (this->_reqMethod)
     {
-        case METHOD_GET:
+        case GET:
             createGetResponse();
             break;
 
-        case METHOD_POST:
+        case POST:
             createPostResponse();
             break;
 
-        case METHOD_DELETE:
+        case DELETE:
             createDeleteResponse();
             break;
     }

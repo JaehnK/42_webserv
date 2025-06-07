@@ -331,21 +331,21 @@ void	HttpRequest::parseRequest(const std::string &buf)
     }
 	if (elements.size() < 2) {  // 검증 추가
         // std::cout << "Not enough elements in request line" << std::endl;
-		this->_method = METHOD_GET;      // 기본값 설정
+		this->_method = GET;      // 기본값 설정
         this->_url = "/";                // 기본값 설정
         return;
         // throw HttpRequestSyntaxException();
     }
 	if (elements.at(0) == "GET")
-		this->_method = METHOD_GET;
+		this->_method = GET;
 	else if (elements.at(0) == "POST")
-		this->_method = METHOD_POST;
+		this->_method = POST;
 	else if (elements.at(0) == "DELETE")
-		this->_method = METHOD_DELETE;
+		this->_method = DELETE;
 	else
     {
         std::cout << "Unknown method: [" << elements.at(0) << "]" << std::endl;  // 추가
-		this->_method = METHOD_GET;      // 기본값 설정
+		this->_method = GET;      // 기본값 설정
         // throw HttpRequestSyntaxException();
     }
 	this->_url = elements.at(1);

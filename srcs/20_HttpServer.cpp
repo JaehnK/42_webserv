@@ -171,8 +171,6 @@ void    HttpServer::logNewConnection(const struct sockaddr_in& clientAddr, int c
 
 int HttpServer::handleClientRead(int currentFd)
 {
-    std::cout << "=== handleClientRead for fd: " << currentFd << " ===" << std::endl;
-    
     // 클라이언트가 맵에 있는지 먼저 확인
     std::map<int, ClientData>::iterator client_it = _clients.find(currentFd);
     if (client_it == _clients.end())
@@ -218,6 +216,7 @@ int HttpServer::handleClientRead(int currentFd)
     
     return 0;
 }
+
 int     HttpServer::handleClientWrite(int currentFd)
 {
     int                                 res;
