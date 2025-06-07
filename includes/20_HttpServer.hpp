@@ -1,6 +1,7 @@
 #pragma once
 #include "webserv.hpp"
 #include "Epoll.hpp"
+#include "ServerSocket.hpp"
 
 class HttpServer
 {
@@ -9,16 +10,12 @@ class HttpServer
 		epoll_event					_events[MAX_EVENTS];
         Config                      _config;
         std::map<int, int>          _serverSockets;
+        std::vector<ServerSocket*>   _serverSocketObjs;
         std::map<int, ClientData>   _clients;
 
-        int     setupServerSockets();
-		int     createServerSocket(int port);
-		void	configureSocket(int fd);
-		void    bindAndListen(int fd, int port);
-
-        void    initializeEpoll();
+        void    setupServerSockets();
         bool    isServerSocket(int fd);
-        
+
         void    acceptNewConnection(int serverFd);
         int     getServerPort(int serverFd);
         bool    setupClientSocket(int client);
@@ -48,7 +45,6 @@ class HttpServer
         ~HttpServer();
         
         ClientData& getClientData(int currentFd);
-        void        initialize();   //  소켓 바인딩
         void        run();  //  서버 루프
         
         class   FailedSocket: public std::exception

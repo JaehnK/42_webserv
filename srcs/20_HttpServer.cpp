@@ -2,93 +2,34 @@
 
 HttpServer::HttpServer(const Config& config) : _config(config)
 {
-}
-
-void    HttpServer::initialize()
-{
     setupServerSockets();
-    initializeEpoll();
 }
 
-int     HttpServer::createServerSocket(int port)
+HttpServer::~HttpServer()
 {
-	int fd = socket(PF_INET, SOCK_STREAM, 0);
-	if (fd < 0)
-		throw SocketCreationError();
-	try {
-		configureSocket(fd);
-		bindAndListen(fd, port);
-		return fd;
-	} catch (const std::exception& e) {
-		close(fd);
-		throw;
-	}
+    for (int i = 0; i < _serverSocketObjs.size(); i++)
+        delete _serverSocketObjs[i];
 }
 
-void	HttpServer::configureSocket(int fd)
+void    HttpServer::setupServerSockets()
 {
-	int opt = 1;
-	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-		throw SocketConfigError();
-
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1)
-		throw SocketConfigError();
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		throw SocketConfigError();
-}
-
-void	HttpServer::bindAndListen(int fd, int port)
-{
-	struct sockaddr_in socketAddr;
-	std::memset(&socketAddr, 0, sizeof(socketAddr));
-	socketAddr.sin_family = AF_INET;
-	socketAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	socketAddr.sin_port = htons(port);
-
-	if (bind(fd, (struct sockaddr*)&socketAddr, sizeof(socketAddr)) < 0)
-		throw SocketConfigError();
-
-	if (listen(fd, 10) < 0)
-		throw SocketConfigError();
-}
-
-int    HttpServer::setupServerSockets()
-{
-    const   std::vector<Server>& servers = _config.getServers();
-
-    for (std::vector<Server>::const_iterator it = servers.begin(); it != servers.end(); ++it)
+    const std::vector<Server>& servers = _config.getServers();
+    for (int i = 0; i < servers.size(); i++)
     {
-        const Server& server = *it;
-        int port = server.getPort();
+        int port = servers[i].getPort();
+        ServerSocket* serverSocket = new ServerSocket(port);
+        int fd = serverSocket->getFd();
 
-        if (_serverSockets.find(port) != _serverSockets.end())
-            continue;
-
-		try {
-			int fd = createServerSocket(port);
-			_serverSockets[port] = fd;
-		} catch (const std::exception& e) {
-            std::cerr << "Failed to setup server socket for port " << port << ": " << e.what() << std::endl;
-            throw;
-		}
-        std::cout << "Server listening on port " << port << std::endl;
+        _epoll.add(fd, EPOLLIN);
+        _serverSockets[fd] = port;
+        _serverSocketObjs.push_back(serverSocket);
+        std::cout << "Server is Running on port : " << port << std::endl;
     }
-    return (0);
-}
-
-void    HttpServer::initializeEpoll()
-{
-    for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
-		_epoll.add(it->second, EPOLLIN);
 }
 
 bool    HttpServer::isServerSocket(int fd)
 {
-	for (std::map<int, int>::iterator it = _serverSockets.begin(); it != _serverSockets.end(); ++it)
-		if (it->second == fd)
-			return true;
-	return false;
+    return _serverSockets.find(fd) != _serverSockets.end();
 }
 
 void	HttpServer::handleEvent(const epoll_event& event)
@@ -190,20 +131,12 @@ void HttpServer::acceptNewConnection(int serverFd)
     std::cout << "Client successfully registered" << std::endl;
 }
 
-int     HttpServer::getServerPort(int serverFd)
+int     HttpServer::getServerPort(int fd)
 {
-    int port;
-
-    for (std::map<int, int>::iterator it = _serverSockets.begin(); \
-        it != _serverSockets.end(); ++it)
-    {
-        if (it->second == serverFd) 
-        {
-            port = it->first;
-            break;
-        }
-    }
-    return (port);
+    std::map<int, int>::iterator it = _serverSockets.find(fd);
+    if (it != _serverSockets.end())
+        return it->second;
+    return -1;
 }
 
 bool    HttpServer::setupClientSocket(int fd)
@@ -381,10 +314,6 @@ int HttpServer::sendResponse(int clientFd)
     
     std::cout << "Response sent: " << sent << " bytes" << std::endl;
     return sent;
-}
-
-HttpServer::~HttpServer()
-{
 }
 
 ClientData& HttpServer::getClientData(int fd)
