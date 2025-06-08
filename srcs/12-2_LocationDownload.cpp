@@ -18,15 +18,7 @@ LocationDownload& LocationDownload::operator=(const LocationDownload& rhs)
     {
         Location::operator=(rhs);
         this->_autoIndex = rhs.getAutoIndex();
-        
-        try
-        {
-            this->_addHeader = rhs.getAddHeader();
-        }
-        catch(const std::exception& e)
-        {
-            this->_addHeader = std::map<std::string, std::string> ();
-        }
+        this->_addHeader = rhs.getAddHeader();
     }
     return (*this);
 }

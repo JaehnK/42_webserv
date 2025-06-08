@@ -56,7 +56,7 @@ std::string LocationUpload::getUploadStore() const
     return (this->_uploadStore);
 }
 
-std::string LocationUpload::setClientBodyTempPath() const
+std::string LocationUpload::getClientBodyTempPath() const
 {
     return (this->_clientBodyTempPath);
 }
