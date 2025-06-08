@@ -62,3 +62,8 @@ bool    LocationDownload::hasAddHeader() const
         return (false);
     return (true);
 }
+
+LocationDownload*   LocationDownload::clone() const
+{
+    return new LocationDownload(*this);
+}

@@ -75,3 +75,8 @@ bool    LocationUpload::hasUploadStore() const
     return (true);
 
 }
+
+LocationUpload* LocationUpload::clone() const
+{
+    return (new LocationUpload(*this));
+}

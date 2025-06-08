@@ -23,4 +23,6 @@ class LocationUpload: public Location
         bool        getClientBodyFileOnly() const;
 
         bool        hasUploadStore() const;
+
+        virtual LocationUpload* clone() const;
 };

@@ -115,3 +115,8 @@ bool    LocationCGI::hasParam() const
         return (false);
     return (true);
 }
+
+LocationCGI* LocationCGI::clone() const
+{
+    return new LocationCGI(*this);
+}

@@ -30,4 +30,6 @@ class LocationCGI: public Location
         // checker
         bool    hasPass() const;
         bool    hasParam() const;
+
+        virtual LocationCGI* clone() const;
 };

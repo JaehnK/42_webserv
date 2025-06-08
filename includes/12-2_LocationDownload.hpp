@@ -23,4 +23,6 @@ class LocationDownload: public Location
 
         // checker
         bool    hasAddHeader() const;
+
+        virtual LocationDownload*           clone() const;
 };

@@ -8,7 +8,8 @@ LocationAPI::LocationAPI()
 
 LocationAPI::LocationAPI(const LocationAPI& rhs): Location(rhs)
 {
-    *this = rhs;
+    this->_locType = API;
+    this->_return = rhs.getReturn();
 }
 
 LocationAPI&    LocationAPI::operator=(const LocationAPI& rhs)
@@ -45,4 +46,8 @@ bool    LocationAPI::hasReturn() const
     return (true);
 }
 
+LocationAPI*    LocationAPI::clone() const
+{
+    return (new LocationAPI(*this));
+}
 
