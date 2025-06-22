@@ -1,14 +1,14 @@
 #pragma once
 #include "webserv.hpp"
 
-class Server;
+class ServerConfig;
 
 class Config
 {
     private:
         std::string             _fileName;
         int                     _clientMaxBodySize;
-        std::vector<Server>     _servers;
+        std::vector<ServerConfig>     _servers;
 
     public:
         Config();
@@ -20,12 +20,12 @@ class Config
         // Setters
         void    setFileName(std::string fileName);
         void    setClientMaxBodySize(int clientMaxBodySize);
-        void    addServer(Server server);
+        void    addServer(ServerConfig server);
 
         // Getters
         std::string         getFileName() const;
         int                 getClientMaxBodySize() const;
-        const std::vector<Server> &getServers() const;
+        const std::vector<ServerConfig> &getServers() const;
 };
 
 std::ostream	&operator<<(std::ostream& os, const Config& conf);

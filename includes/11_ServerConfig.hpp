@@ -2,7 +2,7 @@
 
 class Location;
 
-class Server
+class ServerConfig
 {
     private:
         std::string                 _name;
@@ -14,10 +14,10 @@ class Server
         std::vector<Location*>       _locations;
         
     public:
-        Server();
-        Server(const Server& rhs);
-        Server& operator=(const Server& rhs);
-        ~Server();
+        ServerConfig();
+        ServerConfig(const ServerConfig& rhs);
+        ServerConfig& operator=(const ServerConfig& rhs);
+        ~ServerConfig();
 
         // Setters
         void    setName(const std::string& name);
@@ -57,5 +57,5 @@ class Server
         };
 };
 
-std::ostream	&operator<<(std::ostream& os, const Server& serv);
+std::ostream	&operator<<(std::ostream& os, const ServerConfig& serv);
 

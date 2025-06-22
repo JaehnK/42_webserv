@@ -4,14 +4,14 @@ Config::Config()
 {
     this->_fileName = "default";
     this->_clientMaxBodySize = 0;
-    this->_servers = std::vector<Server> ();
+    this->_servers = std::vector<ServerConfig> ();
 }
 
 Config::Config(char *fileName)
 {
     this->_fileName = fileName;
     this->_clientMaxBodySize = 0;
-    this->_servers = std::vector<Server> ();
+    this->_servers = std::vector<ServerConfig> ();
 }
 
 Config::Config(const Config &rhs)
@@ -43,7 +43,7 @@ void    Config::setClientMaxBodySize(int clientMaxBodySize)
     this->_clientMaxBodySize = clientMaxBodySize;
 }
 
-void    Config::addServer(Server server)
+void    Config::addServer(ServerConfig server)
 {
     this->_servers.push_back(server);
 }
@@ -58,7 +58,7 @@ int Config::getClientMaxBodySize() const
     return (this->_clientMaxBodySize);
 }
 
-const std::vector<Server> &Config::getServers() const
+const std::vector<ServerConfig> &Config::getServers() const
 {
     return (this->_servers);
 }

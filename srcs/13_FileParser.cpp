@@ -213,7 +213,7 @@ void	FileParser::makeServerBlock()
 	std::vector<std::string>	splitted;
 	std::string 				LocationRoot;
 	std::string					buf;
-	Server						serv;
+	ServerConfig						serv;
 
 	_state = IN_SERVER;
 	openFile();
