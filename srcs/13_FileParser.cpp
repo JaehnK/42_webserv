@@ -1,17 +1,24 @@
 #include "webserv.hpp"
 
-FileParser::FileParser()
-{
+ParseContext::ParseContext(ContextType type, const std::string& path, Location* loc)
+	: type(type), locationPath(path), locationPtr(NULL) {}
 
-}
+
+FileParser::FileParser()
+{}
 
 FileParser::FileParser(char *fileName)
 {
-	std::ifstream   ifs;
 
 	this->_fileName = fileName;
-	this->_currentPos = 0;
-	Parse();
+    this->_currentLine = 0;
+	this->_contextStack = std::stack<ParseContext>();
+    
+    this->_config = Config();
+    this->_currentServer = NULL;
+    this->_currentLocation = NULL;
+
+	parse();
 }
 
 FileParser::FileParser(const FileParser& rhs)
@@ -24,42 +31,31 @@ FileParser& FileParser::operator=(const FileParser &rhs)
 	if (this != &rhs)
 	{
 		this->_fileName = rhs.getFileName();
+		this->_contextStack = rhs.getContextStack();
 	}
 	return (*this);
 }
 
 FileParser::~FileParser()
 {
-	if (_ifs.is_open())
-		_ifs.close();
 }
 
-void    FileParser::setFileName(const std::string fileName)
-{
-	this->_fileName = fileName;
-}
 
-void    FileParser::setPosition(std::ifstream& ifs)
-{
-	// if (!ifs.is_open())
-	// 	throw FileNotOpenedException();
-	this->_currentPos = ifs.tellg();
-}
-
-std::string     FileParser::getFileName() const
+std::string	FileParser::getFileName() const
 {
 	return (this->_fileName);
 }
 
-std::streampos  FileParser::getPosition() const
-{
-	return (this->_currentPos);
-}
-
-Config			FileParser::getConfig() const
+Config	FileParser::getConfig() const
 {
 	return (this->_config);
 }
+
+std::stack<ParseContext> FileParser::getContextStack() const
+{
+	return (this->_contextStack);
+}
+
 
 std::string FileParser::trimBuf(std::string &buf) const
 {
@@ -76,7 +72,7 @@ std::string FileParser::trimBuf(std::string &buf) const
 	
 	start = output.find_first_not_of(" \t");
 	if (start == std::string::npos)
-		start = 0;
+		return "";
 
 	end = output.find_last_not_of("  \t");
 	if (end == std::string::npos)
@@ -84,107 +80,6 @@ std::string FileParser::trimBuf(std::string &buf) const
 	
 	output = output.substr(start, end - start + 1);
 	return (output);
-}
-
-void	FileParser::openFile()
-{
-	if (this->_ifs.is_open())
-		this->_ifs.close();
-	this->_ifs.open(this->_fileName.c_str());
-	if (!this->_ifs.is_open())
-		throw FileNotOpenedException();
-	if (this->_currentPos != 0)
-	{
-		// std::cout << "File Open number: " << this->_currentPos << std::endl;
-		_ifs.seekg(this->_currentPos);
-	}
-}
-
-void    FileParser::Parse()
-{
-	std::vector<std::string>	splitted;
-	std::ifstream				ifs;
-	std::string					buf;
-
-	openFile();
-	buf.clear();
-	_config = Config();
-	_state = DEFAULT;
-	while (getline(_ifs, buf))
-	{
-		buf = trimBuf(buf);
-		if (buf.empty())
-			continue;
-		// std::cout << "Top: " << buf << std::endl;
-		splitted = preprocessToken(buf);
-		
-		if (splitted.at(0) == "client_max_body_size")
-		{
-			std::string	cmds = splitted.at(1);
-			int			digit;
-			int			clientMaxBodySize = 0;
-			
-			if (cmds[splitted.at(1).length() - 1] != ';')
-				throw SyntaxErrorException();
-			else
-				cmds.erase(cmds.length() - 1);
-			cmds = trimBuf(cmds);
-			if (cmds[cmds.length() - 1] == 'M' || \
-				cmds[cmds.length() - 1] == 'm')
-				digit = 1000000;
-			else if (cmds[cmds.length() - 1]== 'K' || \
-				cmds[cmds.length() - 1]== 'k')
-				digit = 1000;
-			else
-				throw SyntaxErrorException();
-			
-			cmds.erase(cmds.length() - 1);
-
-			for (std::string::iterator it = cmds.begin(); it != cmds.end(); ++it)
-			{
-				if (std::isdigit(*it) == false)
-				{
-					// std::cerr << "not number" << std::endl;
-					throw SyntaxErrorException();
-				}
-			}
-			clientMaxBodySize = std::atoi(cmds.c_str());
-			clientMaxBodySize *= digit;
-			this->_config.setClientMaxBodySize(clientMaxBodySize);
-		}
-		
-		if (splitted.size() == 1 && splitted.at(0) == "server")
-		{
-			_state = SERVER_KEYWORD;
-			continue;
-		}
-		
-		if (splitted.size() > 1 && \
-				splitted.at(0) == "server" && \
-				splitted.at(1) == "{")
-		{
-			this->setPosition(this->_ifs);
-			_ifs.close();
-			makeServerBlock();
-			openFile();
-			continue;
-		}
-
-		if (_state == SERVER_KEYWORD)
-		{
-			if (splitted.size() == 1 && splitted.at(0) == "{")
-			{
-				this->setPosition(this->_ifs);
-				_ifs.close();
-				makeServerBlock();
-				openFile();
-			continue;
-
-			}
-		}
-
-		buf.clear();
-	}
 }
 
 std::vector<std::string>	FileParser::preprocessToken(std::string& buf)
@@ -196,271 +91,484 @@ std::vector<std::string>	FileParser::preprocessToken(std::string& buf)
 	if (buf == "server" || buf.find("location") != std::string::npos)
 		;
 	else if (std::string("{};").find(lstChar) == std::string::npos)
-	{
-		std::cout << "Test Failed: " << buf << std::endl;
-		throw SyntaxErrorException();
-	}
+		throw FileParserSyntaxErrorException("Invalid syntax: " + buf);
+	
 	
 	splitted = ServerManager::split(buf, ' ');
 	if (splitted.size() == 1 && (splitted.at(0) == "{" && splitted.at(0) == "}"))
-		throw SyntaxErrorException();
-	
+        ;
 	return (splitted);
 }
 
-void	FileParser::makeServerBlock()
+void    FileParser::validateToken(const std::vector<std::string>& tokens) const
 {
-	std::vector<std::string>	splitted;
-	std::string 				LocationRoot;
-	std::string					buf;
-	Server						serv;
-
-	_state = IN_SERVER;
-	openFile();
-	
-	while (getline(this->_ifs, buf))
-	{
-		if (this->_ifs.tellg() == -1)
-			break ;
-		buf = trimBuf(buf);
-		if (buf.empty())
-			continue;
-		// std::cout << "Serv: " << buf << std::endl;
-		splitted = preprocessToken(buf);
-
-		if (_state == LOCATION_KEYWORD)
-		{
-			if (splitted.size() == 1 && splitted.at(0) == "{")
-			{
-				this->setPosition(this->_ifs);
-				this->_ifs.close();
-				serv.addLocation(makeLocationBlock(LocationRoot));
-				openFile();
-			}
-			else
-				throw SyntaxErrorException();
-		}
-		
-		if (splitted.at(0) == "listen")
-		{
-			std::vector<std::string>	listen;
-
-			serv.setListen(ServerManager::split(splitted.at(1), ';').at(0));
-			listen = ServerManager::split(serv.getListen(), ':');
-			serv.setHost(listen.at(0));
-			serv.setPort(std::atoi(listen.at(1).c_str()));
-		}
-		else if (splitted.at(0) == "server_name")
-			serv.setName(ServerManager::split(splitted.at(1), ';').at(0));
-		else if (splitted.at(0) == "error_page")
-			serv.addErrorPage(std::atoi(splitted.at(1).c_str()), splitted.at(2));
-		else if (splitted.at(0) == "port")
-			serv.setPort(std::atoi(splitted.at(1).c_str()));
-		else if (splitted.at(0) == "root")
-			serv.setRoot(splitted.at(1));
-		else if (splitted.at(0) == "location")
-		{
-			if (splitted.size() >= 3 && splitted.at(splitted.size() - 1) == "{")
-			{
-				if (splitted.size() > 3)
-				{
-					for (size_t i = 1; i < splitted.size() - 1; i++)
-					{
-						if (i > 1) 
-							LocationRoot += " ";
-						LocationRoot += splitted.at(i);
-					}
-				}
-				else
-					LocationRoot = splitted.at(1);
-				this->setPosition(this->_ifs);
-				this->_ifs.close();
-				serv.addLocation(makeLocationBlock(LocationRoot));
-				openFile();
-				continue;
-			}
-			else
-			{
-				for (size_t i = 1; i < splitted.size(); i++)
-				{
-					if (i > 1) 
-						LocationRoot += " ";
-					LocationRoot += splitted.at(i);
-				}
-				_state = LOCATION_KEYWORD;
-				if (this->_ifs.tellg() == -1)
-					break ;
-				continue;
-			}
-		}
-		else if (splitted.at(0) == "}")
-			break ;
-		else
-		{
-			if (this->_ifs.tellg() == -1)
-					break ;
-			std::cout << " :ERROR Keyword(in server): " << splitted.at(0) << std::endl;
-			throw SyntaxErrorException();
-		}
-
-	}
-	_state = DEFAULT;
-	this->_config.addServer(serv);
-	this->setPosition(this->_ifs);
-	this->_ifs.close();
+    std::string directive = tokens[0];
+    std::string lastToken = tokens[tokens.size() - 1];
+    if (tokens.empty())
+        return ;
+    
+    if (directive != "server" && directive != "location" && \
+        directive != "{" && directive != "}")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("Directive Missing Value:" + directive);
+        if (!lastToken.empty() && lastToken[lastToken.length() - 1] != ';')
+            throw FileParserSyntaxErrorException("Missing Semicolon After Directive: " + directive);
+    }
 }
 
-Location*	FileParser::makeLocationBlock(std::string path)
+std::string FileParser::removeSemicolon(const std::string& str) const
 {
-	std::string					buf;
-	std::string 				LocationRoot;
-	Location*					locBlock;
-	std::vector<std::string>	splitted;
+    std::string result = str;
+    if (!result.empty() && result[result.length() - 1] == ';')
+    {
+        result.erase(result.length() - 1);
+    }
+    return result;
+}
 
+std::string FileParser::extractLocationPath(const std::vector<std::string>& tokens) const
+{
+    std::string path;
+    if (tokens.size() < 2) 
+        throw FileParserSyntaxErrorException("Location directive requires a path");
+    
+    for (size_t i = 1; i < tokens.size(); ++i)
+    {
+        if (tokens[i] == "{")
+            break;
+        if (i > 1)
+            path += " ";
+        path += tokens[i];
+    }
+    return (path);
+}
 
-	if (path == "/")
-		locBlock = new LocationDefault();
-	else if (path.find("api") != std::string::npos)
-		locBlock = new LocationAPI();
-	else if (path.find("download") != std::string::npos)
-		locBlock = new LocationDownload();
-	else if (path.find("upload") != std::string::npos)
-		locBlock = new LocationUpload();
-	else
-		locBlock = new LocationCGI();
+int FileParser::parseMultiplier(std::string& value) const
+{
+    char lastChar;
+    if (value.empty())
+        throw FileParserSyntaxErrorException("Empty value in size directive");
+    
+    lastChar = value[value.length() - 1];
+    if (lastChar == 'M' || lastChar == 'm')
+    {
+        value.erase(value.length() - 1);
+        return 1000000;
+    } 
+    else if (lastChar == 'K' || lastChar == 'k')
+    {
+        value.erase(value.length() - 1);
+        return 1000;
+    }
+    else if (std::isdigit(lastChar))
+    {
+        return 1;
+    } 
+    else
+    {
+        throw FileParserSyntaxErrorException("Invalid size unit");
+    }
+}
+
+int FileParser::parseNumericValue(const std::string& str) const
+{
+    if (str.empty())
+        throw FileParserSyntaxErrorException("Empty numeric value");
+    
+    for (size_t i = 0; i < str.length(); ++i)
+    {
+        if (!std::isdigit(str[i]))
+            throw FileParserSyntaxErrorException("Invalid numeric value: " + str);
+    }
+    return (std::atoi(str.c_str()));
+}
+
+void    FileParser::parse()
+{
+    std::string     line;
+	std::ifstream   ifs(this->_fileName.c_str());
+	if (!ifs.is_open())
+		throw FileParserFileNotOpenedException(this->_fileName);
+    
+    this->_contextStack.push(ParseContext(ParseContext::GlOBAL));
+    try
+    {
+        while (getline(ifs, line))
+        {
+            _currentLine++;
+            processLine(line);
+        }
+        ifs.close();
+
+        if (this->_contextStack.size() != 1)
+            throw FileParserSyntaxErrorException("Unclosed blocks detected", _currentLine);
+
+        afterParse();
+    }
+    catch (const std::exception& e)
+    {
+        ifs.close();
+        afterParse();
+        throw;
+    }
 	
-	locBlock->setPath(path);
-	
-	_state = IN_LOCATION;
-	openFile();
-	while (getline(this->_ifs, buf))
-	{
-		buf = trimBuf(buf);
-		if (buf.empty())
-			continue;
-		
-		splitted = preprocessToken(buf);
-		// std::cout << "Location: " << buf << std::endl;
-		// size_t test = splitted.at(0) == "}";
-		// std::cout << "Close test: " << test << std::endl;
-		if (_state == LOCATION_KEYWORD)
-		{
-			if (splitted.size() == 1 && splitted.at(0) == "{")
-			{
-				this->setPosition(this->_ifs);
-				this->_ifs.close();
-				locBlock->addLocations(makeLocationBlock(LocationRoot));
-				openFile();
-			}
-			else
-				throw SyntaxErrorException();
-		}
-		if (splitted.at(0) == "}")
-		{
-			// std::cout << "loc block end" << std::endl;
-			break ;
-		}
-		if (splitted.at(0) == "location")
-		{
-			if (splitted.size() >= 3 && splitted.at(splitted.size() - 1) == "{")
-			{
-				if (splitted.size() > 3)
-				{
-					for (size_t i = 1; i < splitted.size() - 1; i++)
-					{
-						if (i > 1) 
-							LocationRoot += " ";
-						LocationRoot += splitted.at(i);
-					}
-				}
-				else
-				{
-					LocationRoot = splitted.at(1);
-				}
-				this->setPosition(this->_ifs);
-				this->_ifs.close();
-				locBlock->addLocations(makeLocationBlock(LocationRoot));
-				openFile();
-			}
-			else
-			{
-				for (size_t i = 1; i < splitted.size(); i++)
-				{
-					if (i > 1) 
-						LocationRoot += " ";
-					LocationRoot += splitted.at(i);
-				}
-				_state = LOCATION_KEYWORD;
-			}
-		}
-		else if (splitted.at(0) == "root")
-		{
-			locBlock->setRoot(splitted.at(0));
-			// std::cout << "Root : " << locBlock->getRoot() << std::endl;
-		}
-		else if (splitted.at(0) == "index")
-		{
-			locBlock->setIndex(splitted.at(1));
-			// std::cout << "Index: "<<locBlock->getIndex() << std::endl;
-		}
-		else if (splitted.at(0) == "limit_except")
-		{
-			for (size_t i = 1; i < splitted.size(); i++)
-				locBlock->addLimitExcept(splitted.at(i));
-			// std::cout << "limit except" << std::endl; 
-		}
-		else if (splitted.at(0) == "error_page")
-			locBlock->addErrorPage(std::atoi(splitted.at(1).c_str()), splitted.at(2));
-		else if (locBlock->getType() == API && splitted.at(0) == "return")
-			locBlock->addReturn(std::atoi(splitted.at(1).c_str()), splitted.at(2));
-		else if (locBlock->getType() == DOWNLOAD)
-		{
-			if (splitted.at(0) == "autoindex" && splitted.at(1) == "on")
-				locBlock->setAutoIndex(true);
-			else if (splitted.at(0) == "add_header")
-				locBlock->addAddHeader(splitted.at(1), splitted.at(2));
-		}
-		else if (locBlock->getType() == UPLOAD)
-		{
-			if (splitted.at(0) == "client_body_temp_path")
-				locBlock->setClientBodyTempPath(splitted.at(1));
-			else if (splitted.at(0) == "client_body_in_file_only" && splitted.at(1) == "on")
-				locBlock->setClientBodyFileOnly(true);
-			else if (splitted.at(0) == "upload_store")
-				locBlock->setUploadStore(splitted.at(1));
-		}
-		else if (locBlock->getType() == CGI)
-		{
-			if (splitted.at(0) == "fastcgi_pass")
-				locBlock->setPass(splitted.at(1));
-			else if (splitted.at(0) == "fastcgi_index")
-				locBlock->setcgiIndex(splitted.at(1));
-			else if (splitted.at(0) == "fastcgi_param")
-				locBlock->addParam(splitted.at(1), splitted.at(2));
-		}
-		else
-		{
-			if (this->_ifs.tellg() == -1)
-				break ;
-			std::cout << "ERROR Keyword: " << splitted.at(0) << std::endl;
-			throw SyntaxErrorException();
-		}
 
-	}
-	_state = DEFAULT;
-	this->setPosition(this->_ifs);
-	this->_ifs.close();
-	// std::cout << "Location " << locBlock->getPath() <<" Block closed" << std::endl;
-	return (locBlock);
+}
+
+void    FileParser::afterParse()
+{
+    while (!this->_contextStack.empty())
+        this->_contextStack.pop();
+    
+    this->_currentServer = NULL;
+    this->_currentLocation = NULL;
+    this->_currentLine = 0;
+}
+
+void    FileParser::processLine(std::string& line)
+{
+    line = trimBuf(line);
+    if (line.empty())
+        return ;
+    
+    try
+    {
+        std::vector<std::string> tokens = preprocessToken(line);
+        validateToken(tokens);
+        processTokens(tokens);
+    }
+    catch (const std::exception& e)
+    {
+        throw FileParserSyntaxErrorException(std::string(e.what()), _currentLine);
+    }
+    
+}
+
+void    FileParser::processTokens(const std::vector<std::string>& tokens)
+{
+    if (tokens.empty())
+        return ;
+    
+    const std::string& directive = tokens[0];
+
+    if (directive == "}")
+    {
+        exitBlock();
+        return ;
+    }
+
+    ParseContext::ContextType current = this->_contextStack.top().type;
+
+    switch (current)
+    {
+        case ParseContext::GlOBAL:
+            processGlobalDirective(tokens);
+            break;
+        
+        case ParseContext::SERVER:
+            processServerDirective(tokens);
+            break;
+    
+        case ParseContext::LOCATION:
+            processLocationDirective(tokens);
+            break;
+        
+        default:
+            break;
+    }
+}
+ 
+
+void    FileParser::processGlobalDirective(const std::vector<std::string>& tokens)
+{
+    const std::string& dir = tokens[0];
+
+    if (dir == "client_max_body_size")
+        processClientMaxBodySize(tokens);
+    else if (dir == "server")
+        enterServerBlock();
+    else
+        throw FileParserSyntaxErrorException("Unknown Global Directive: " + dir);
+}
+
+void    FileParser::processServerDirective(const std::vector<std::string>& tokens)
+{
+    const std::string& dir = tokens[0];
+
+    if (dir == "listen")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("listen requires a value");
+        processListenDirective(tokens[1]);
+    }
+    else if (dir == "server_name")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("server_name requires a value");
+        this->_currentServer->setName(removeSemicolon(tokens[1]));
+    }
+    else if (dir == "error_page")
+    {
+        processErrorPageDirective(tokens);
+    }
+    else if (dir == "root")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("root requires a value");
+        _currentServer->setRoot(removeSemicolon(tokens[1]));
+    }
+    else if (dir == "location")
+    {
+        enterLocationBlock(extractLocationPath(tokens));
+    }
+    else
+        throw FileParserSyntaxErrorException("Unknown Server Directive: " + dir);
+}
+
+void    FileParser::processLocationDirective(const std::vector<std::string>& tokens)
+{
+    const std::string&  dir = tokens[0];
+    locationType        type = this->_currentLocation->getType();
+
+    if (dir == "root")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("root requires a value");
+        this->_currentLocation->setRoot(removeSemicolon(tokens[1]));
+        return ;
+    }
+    else if (dir == "limit_except")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("limit_except requires a value");
+        for (int i = 1; i < tokens.size(); i++)
+        {
+            if (i == tokens.size())
+                this->_currentLocation->addLimitExcept(removeSemicolon(tokens[i]));
+            else
+                this->_currentLocation->addLimitExcept(tokens[i]);
+        }
+        return ;
+    }
+    else if (dir == "index")
+    {
+        if (tokens.size() < 2)
+            throw FileParserSyntaxErrorException("index requires a value");
+        this->_currentLocation->setIndex(removeSemicolon(tokens[1]));
+        return ;
+    }
+
+    if (type == API && dir == "return")
+    {
+        if (dir == "return")
+        {
+            if (tokens.size() < 3)
+                throw FileParserSyntaxErrorException("return requires code and URL");
+            this->_currentLocation->addReturn(parseNumericValue(tokens[1]), \
+                                        removeSemicolon(tokens[2]));
+        }
+        else
+            throw FileParserSyntaxErrorException("Unkown Directive in Location API: " + dir);            
+    }
+    else if (type == DOWNLOAD)
+    {
+        if (dir == "autoindex")
+        {
+            if (removeSemicolon(tokens[1]) != "on")
+                throw FileParserSyntaxErrorException("autoindex has invalid value: " + removeSemicolon(tokens[1]));
+            this->_currentLocation->setAutoIndex(true);
+        }
+        else if (dir == "add_header")
+        {
+            if (tokens.size() < 3)
+                throw FileParserSyntaxErrorException("add_header requires key and value");
+            this->_currentLocation->addAddHeader(tokens[1], removeSemicolon(tokens[2]));
+        }
+        else
+            throw FileParserSyntaxErrorException("Unkown Directive in Location Download: " + dir);
+    }
+    else if (type == UPLOAD)
+    {
+        if (dir == "client_body_temp_path")
+        {
+            if (tokens.size() < 2)
+                throw FileParserSyntaxErrorException("client_body_path requires a value");
+            this->_currentLocation->setClientBodyTempPath(tokens[1]);
+        }
+        else if (dir == "client_body_in_file_only")
+        {
+            if (tokens.size() < 2)
+                throw FileParserSyntaxErrorException("client_body_in_file_only requires a value");
+            if (removeSemicolon(tokens[1]) != "on")
+                throw FileParserSyntaxErrorException("client_body_in_file_only has invalid value: " + removeSemicolon(tokens[1]));
+            this->_currentLocation->setClientBodyFileOnly(true);
+        }
+        else if (dir == "upload_store")
+        {
+            if (tokens.size() < 2)
+                throw FileParserSyntaxErrorException("upload_store requires a value");
+            this->_currentLocation->setUploadStore(removeSemicolon(tokens[1]));
+        }
+    }
+    else if (type == CGI)
+    {
+        if (dir == "fastcgi_pass")
+        {
+            if (tokens.size() < 2)
+                throw FileParserSyntaxErrorException("fastcgi_pass requires a value");
+            this->_currentLocation->setPass(removeSemicolon(tokens[1]));
+        }
+        else if (dir == "fastcgi_index")
+        {
+            if (tokens.size() < 2)
+                throw FileParserSyntaxErrorException("fastcgi_index requires a value");
+            this->_currentLocation->setPass(removeSemicolon(tokens[1]));
+        }
+        else if (dir == "fastcgi_param")
+        {
+            if (tokens.size() < 3)
+                throw FileParserSyntaxErrorException("fastcgi_param requires a value");
+            this->_currentLocation->addParam(tokens[1], removeSemicolon(tokens[2]));
+        }
+    }
+    else
+        throw FileParserSyntaxErrorException("Unkown Directive for location type: " + dir);
 }
 
 
-const char* FileParser::FileNotOpenedException::what() const throw()
+void    FileParser::processClientMaxBodySize(const std::vector<std::string>& tokens)
+{
+    if (tokens.size() != 2)
+        throw FileParserSyntaxErrorException("client_max_body_size requires exactly one argument");
+    
+    std::string value = removeSemicolon(tokens[1]);
+    int multiplier = parseMultiplier(value);
+    int size = parseNumericValue(value) * multiplier;
+    
+    _config.setClientMaxBodySize(size);
+}
+
+void    FileParser::processListenDirective(const std::string& value)
+{
+    std::string listen = removeSemicolon(value);
+    this->_currentServer->setListen(listen);
+    
+    std::vector<std::string> hostPort = ServerManager::split(listen, ':');
+    if (hostPort.size() == 2)
+    {
+        _currentServer->setHost(hostPort[0]);
+        _currentServer->setPort(parseNumericValue(hostPort[1]));
+    }
+}
+
+void    FileParser::processErrorPageDirective(const std::vector<std::string>& tokens)
+{
+    if (tokens.size() < 3)
+        throw FileParserSyntaxErrorException("error_page requires code and path");
+    
+    int code = parseNumericValue(tokens[1]);
+    std::string path = removeSemicolon(tokens[2]);
+    _currentServer->addErrorPage(code, path);
+}
+
+void    FileParser::enterServerBlock()
+{
+    this->_contextStack.push(ParseContext(ParseContext::SERVER));
+    this->_currentServer = new ServerConfig();
+}
+
+void    FileParser::enterLocationBlock(const std::string& path)
+{
+    Location* newLocation = createLocation(path);
+
+    this->_contextStack.push(ParseContext(ParseContext::LOCATION, path, newLocation));
+    this->_currentLocation = newLocation;
+    this->_currentLocation->setPath(path);
+}
+
+void    FileParser::exitBlock()
+{
+    if (this->_contextStack.size() <= 1)
+        throw FileParserSyntaxErrorException("Unexpected '}'");
+    
+    ParseContext context = this->_contextStack.top();
+    this->_contextStack.pop();
+
+    switch (context.type)
+    {
+        case ParseContext::SERVER:
+            this->_config.addServer(*_currentServer);
+            delete (_currentServer);
+            this->_currentServer = NULL;
+            break;
+        
+        case ParseContext::LOCATION:
+            if (this->_contextStack.top().type == ParseContext::SERVER)
+            {
+                this->_currentServer->addLocation(this->_currentLocation);
+                this->_currentLocation = NULL;
+            }
+            else if (this->_contextStack.top().type == ParseContext::LOCATION)
+            {
+                Location* parentLoc = this->_contextStack.top().locationPtr;
+                if (!parentLoc)
+                    throw FileParserSyntaxErrorException("Parent Location Not Found");
+                parentLoc->addLocations(this->_currentLocation);
+                this->_currentLocation = parentLoc;
+            }
+            break;
+        
+        case ParseContext::GlOBAL:
+            throw FileParserSyntaxErrorException("Unexpected '}'");
+    }
+}
+
+Location*   FileParser::createLocation(const std::string& path) const
+{
+    if (path == "/")
+        return new LocationDefault();
+    else if (path.find("api") != std::string::npos)
+        return new LocationAPI();
+    else if (path.find("download") != std::string::npos)
+        return new LocationDownload();
+    else if (path.find("upload") != std::string::npos)
+        return new LocationUpload();
+    else
+        return new LocationCGI();
+    
+    return (NULL);
+}
+
+
+FileParser::FileParserFileNotOpenedException::FileParserFileNotOpenedException(const std::string &filename)
+{
+    this->_msg = "Failed to open configuration file: " + filename;
+}
+
+FileParser::FileParserSyntaxErrorException::~FileParserSyntaxErrorException() throw()
+{}
+
+const char* FileParser::FileParserFileNotOpenedException::what() const throw()
 {
 	return ("You MotherFucker");
 }
 
-const char* FileParser::SyntaxErrorException::what() const throw()
+FileParser::FileParserSyntaxErrorException::FileParserSyntaxErrorException(const std::string &msg, int line)
 {
-	return ("You MotherFucker");
+    _msg = msg;
+    if (line > 0)
+    {
+        std::ostringstream oss;
+        oss << " at line " << line;
+        this->_msg += oss.str();
+    }
 }
+
+const char* FileParser::FileParserSyntaxErrorException::what() const throw()
+{
+	return (this->_msg.c_str());
+}
+
+FileParser::FileParserFileNotOpenedException::~FileParserFileNotOpenedException() throw()
+{}

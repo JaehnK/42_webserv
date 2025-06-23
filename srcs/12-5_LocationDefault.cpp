@@ -24,3 +24,8 @@ LocationDefault::~LocationDefault()
     
 }
 
+
+LocationDefault* LocationDefault::clone() const
+{
+    return new LocationDefault(*this);
+}

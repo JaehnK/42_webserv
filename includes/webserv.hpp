@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <regex.h>
 #include <unistd.h>
@@ -20,11 +21,13 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <stack>
 #include <map>
+#include <set>
 #include <memory>
 #include <cstring>
 #include "10_Config.hpp"
-#include "11_Server.hpp"
+#include "11_ServerConfig.hpp"
 #include "12_Location.hpp"
 #include "12-1_LocationAPI.hpp"
 #include "12-2_LocationDownload.hpp"
@@ -32,10 +35,6 @@
 #include "12-4_LocationCGI.hpp"
 #include "12-5_LocationDefault.hpp"
 #include "13_FileParser.hpp"
-#include "21_HttpRequest.hpp"
-#include "22_HttpResponse.hpp"
-#include "23_ClientData.hpp"
-#include "20_HttpServer.hpp"
 #include "00_ServerManager.hpp"
 
 #define MAX_EVENTS 64

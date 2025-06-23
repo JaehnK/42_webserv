@@ -17,23 +17,9 @@ LocationCGI& LocationCGI::operator=(const LocationCGI& rhs)
     if (this != &rhs)
     {
         Location::operator=(rhs);
-        
-        try
-        {
-            this->_pass = rhs.getPass();
-        }
-        catch(const std::exception& e)
-        {
-            this->_pass.clear();
-        }
-        try
-        {
-            this->_param = rhs.getParam();
-        }
-        catch(const std::exception& e)
-        {
-            this->_param = std::map<std::string, std::string>  ();
-        }
+        this->_pass = rhs.getPass();
+        this->_param = rhs.getParam();
+        this->_cgiIndex = rhs.getCgiIndex();
     }
     return (*this);
 }
@@ -89,7 +75,7 @@ std::string  LocationCGI::getPass() const
     return (this->_pass);
 }
 
-std::string LocationCGI::getCgiIndx() const
+std::string LocationCGI::getCgiIndex() const
 {
     return (this->_cgiIndex);
 }
@@ -114,4 +100,9 @@ bool    LocationCGI::hasParam() const
     if (this->_param.size() == 0)
         return (false);
     return (true);
+}
+
+LocationCGI* LocationCGI::clone() const
+{
+    return new LocationCGI(*this);
 }

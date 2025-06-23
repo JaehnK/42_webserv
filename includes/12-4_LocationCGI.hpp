@@ -24,10 +24,12 @@ class LocationCGI: public Location
 
         // getter
         std::string                         getPass() const;
-        std::string                         getCgiIndx() const;
+        std::string                         getCgiIndex() const;
         std::map<std::string, std::string>  getParam() const;;
 
         // checker
         bool    hasPass() const;
         bool    hasParam() const;
+
+        virtual LocationCGI* clone() const;
 };
