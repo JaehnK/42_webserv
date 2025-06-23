@@ -153,25 +153,26 @@ std::string HttpResponse::toString() const {
 
 std::string HttpResponse::getHeaderString() const {
     std::ostringstream oss;
-    
+
     // Status Line
     oss << "HTTP/1.1 " << _statusCode << " " << _statusMessage << "\r\n";
-    
+
     // Headers
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); 
          it != _headers.end(); ++it) {
         oss << it->first << ": " << it->second << "\r\n";
     }
-    
+
     // Empty line
     oss << "\r\n";
-    
+
     return oss.str();
 }
 
-size_t HttpResponse::getContentLength() const {
-    return _body.length();
-}
+int HttpResponse::getStatusCode() const { return _statusCode; }
+const std::string&  HttpResponse::getStatusMessage() const { return _statusMessage; }
+const std::string&  HttpResponse::getBody() const { return _body; }
+size_t HttpResponse::getContentLength() const { return _body.length(); }
 
 void HttpResponse::reset() {
     _statusCode = 200;

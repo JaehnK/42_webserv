@@ -35,7 +35,7 @@ class ClientConnection {
         size_t          _writeOffset;        // 전송된 바이트 수
 
         // 서버 설정 참조
-        const ServerConfig*   _serverConfig;
+        const ServerConfig* _serverConfig;
 
         // 내부 상수
         static const size_t READ_BUFFER_SIZE = 8192;    // 8KB
@@ -58,39 +58,39 @@ class ClientConnection {
         int writeData();
 
         // 상태 관리
-        ConnectionState getState() const { return _state; }
-        void setState(ConnectionState new_state);
+        ConnectionState getState() const;
+        void            setState(ConnectionState new_state);
 
         // 타임아웃 관리
-        bool isTimedOut(time_t current_time, int timeout_seconds) const;
-        time_t getLastActivity() const { return _lastActivity; }
-        time_t getConnectionDuration(time_t current_time) const;
+        bool    isTimedOut(time_t current_time, int timeout_seconds) const;
+        time_t  getLastActivity() const;
+        time_t  getConnectionDuration(time_t current_time) const;
 
         // 요청/응답 처리
-        int processRequest();
-        bool isRequestComplete() const;
-        bool isResponseComplete() const;
+        int     processRequest();
+        bool    isRequestComplete() const;
+        bool    isResponseComplete() const;
 
         // Getters
-        int getSocketFd() const { return _socketFd; }
-        const HttpRequest& getRequest() const { return _request; }
-        HttpResponse& getResponse() { return _response; }
-        const ServerConfig* getServerConfig() const { return _serverConfig; }
-        const std::string& getClientIP() const { return _clientIp; }
-        int getClientPort() const { return _clientPort; }
+        int                 getSocketFd() const;
+        const HttpRequest&  getRequest() const;
+        HttpResponse&       getResponse();
+        const ServerConfig* getServerConfig() const;
+        const std::string&  getClientIP() const;
+        int                 getClientPort() const;
 
         // 연결 정보
         std::string getConnectionInfo() const;
 
         // Keep-Alive 관리
-        bool shouldKeepAlive() const;
-        void prepareForNextRequest();
+        bool    shouldKeepAlive() const;
+        void    prepareForNextRequest();
 
         // 에러 처리
-        void setError(int error_code, const std::string& message = "");
-        bool hasError() const;
+        void    setError(int error_code, const std::string& message = "");
+        bool    hasError() const;
 
         // 디버깅
         std::string getStateString() const;
-        void logState() const;
+        void        logState() const;
 };

@@ -52,15 +52,15 @@ class HttpResponse {
         std::string getHeaderString() const;
 
         // Getters
-        int getStatusCode() const { return _statusCode; }
-        const std::string& getStatusMessage() const { return _statusMessage; }
-        const std::string& getBody() const { return _body; }
-        size_t getContentLength() const;
+        int                 getStatusCode() const;
+        const std::string&  getStatusMessage() const;
+        const std::string&  getBody() const;
+        size_t              getContentLength() const;
 
         // 상태 확인
-        bool isHeadersSent() const { return _headersSent; }
-        bool isBodySet() const { return _bodySet; }
+        bool    isHeadersSent() const { return _headersSent; }
+        bool    isBodySet() const { return _bodySet; }
 
         // 디버깅
-        void reset();
+        void    reset();
 };

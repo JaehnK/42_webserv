@@ -100,6 +100,8 @@ int ClientConnection::writeData() {
     return bytes_sent;
 }
 
+ConnectionState ClientConnection::getState() const { return _state; }
+
 void ClientConnection::setState(ConnectionState new_state) {
     _state = new_state;
     updateLastActivity();
@@ -108,6 +110,9 @@ void ClientConnection::setState(ConnectionState new_state) {
 bool ClientConnection::isTimedOut(time_t current_time, int timeout_seconds) const {
     return (current_time - _lastActivity) > timeout_seconds;
 }
+
+time_t  ClientConnection::getLastActivity() const { return _lastActivity; }
+
 
 time_t ClientConnection::getConnectionDuration(time_t current_time) const {
     return current_time - _connectionStart;
@@ -149,6 +154,14 @@ bool ClientConnection::isRequestComplete() const {
 bool ClientConnection::isResponseComplete() const {
     return _writeBuffer.empty() || _writeOffset >= _writeBuffer.length();
 }
+
+// Getters
+int ClientConnection::getSocketFd() const { return _socketFd; }
+const HttpRequest& ClientConnection::getRequest() const { return _request; }
+HttpResponse& ClientConnection::getResponse() { return _response; }
+const ServerConfig* ClientConnection::getServerConfig() const { return _serverConfig; }
+const std::string& ClientConnection::getClientIP() const { return _clientIp; }
+int ClientConnection::getClientPort() const { return _clientPort; }
 
 std::string ClientConnection::getConnectionInfo() const {
     return _clientIp + ":" + StringUtils::toString(_clientPort);
