@@ -9,7 +9,6 @@ class Config
         std::string             _fileName;
         int                     _clientMaxBodySize;
         std::vector<ServerConfig>     _servers;
-
         bool                        _validated;
         std::vector<std::string>    _validateErrMsgs;
 

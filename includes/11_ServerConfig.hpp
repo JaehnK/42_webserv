@@ -49,7 +49,6 @@ class ServerConfig
         // size
         size_t  errPagesSize() const;
         size_t  locationSize() const;
-
         const Location* matchLocation(const std::string& path);
         
         class DataNotFoundException: public std::exception
