@@ -2,7 +2,7 @@
 
 class Location;
 
-class Server
+class ServerConfig
 {
     private:
         std::string                 _name;
@@ -14,10 +14,10 @@ class Server
         std::vector<Location*>       _locations;
         
     public:
-        Server();
-        Server(const Server& rhs);
-        Server& operator=(const Server& rhs);
-        ~Server();
+        ServerConfig();
+        ServerConfig(const ServerConfig& rhs);
+        ServerConfig& operator=(const ServerConfig& rhs);
+        ~ServerConfig();
 
         // Setters
         void    setName(const std::string& name);
@@ -49,6 +49,8 @@ class Server
         // size
         size_t  errPagesSize() const;
         size_t  locationSize() const;
+
+        const Location* matchLocation(const std::string& path);
         
         class DataNotFoundException: public std::exception
         {
@@ -57,5 +59,5 @@ class Server
         };
 };
 
-std::ostream	&operator<<(std::ostream& os, const Server& serv);
+std::ostream	&operator<<(std::ostream& os, const ServerConfig& serv);
 

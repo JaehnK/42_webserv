@@ -475,7 +475,7 @@ void    FileParser::processErrorPageDirective(const std::vector<std::string>& to
 void    FileParser::enterServerBlock()
 {
     this->_contextStack.push(ParseContext(ParseContext::SERVER));
-    this->_currentServer = new Server();
+    this->_currentServer = new ServerConfig();
 }
 
 void    FileParser::enterLocationBlock(const std::string& path)

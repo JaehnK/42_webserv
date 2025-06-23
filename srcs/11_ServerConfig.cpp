@@ -1,13 +1,13 @@
 #include "webserv.hpp"
 
-Server::Server()
+ServerConfig::ServerConfig()
 {
     this->_port = -1;
     this->_errorPages = std::map<int, std::string> ();
     this->_locations = std::vector<Location*> ();
 }
 
-Server::Server(const Server &rhs)
+ServerConfig::ServerConfig(const ServerConfig &rhs)
 {
     this->_port = rhs.getPort();
     this->_host = rhs.getHost();
@@ -25,7 +25,7 @@ Server::Server(const Server &rhs)
     }
 }
 
-Server& Server::operator=(const Server &rhs)
+ServerConfig& ServerConfig::operator=(const ServerConfig &rhs)
 {
     if (this != &rhs)
     {
@@ -55,7 +55,7 @@ Server& Server::operator=(const Server &rhs)
     return (*this);
 }
 
-Server::~Server()
+ServerConfig::~ServerConfig()
 {
     for (std::vector<Location*>::iterator it = _locations.begin(); \
         it != _locations.end(); ++it)
@@ -66,155 +66,168 @@ Server::~Server()
     this->_locations.clear();
 }
 
-void    Server::setName(const std::string& name)
+void    ServerConfig::setName(const std::string& name)
 {
     this->_name = name;
 }
 
-void    Server::setHost(const std::string& host)
+void    ServerConfig::setHost(const std::string& host)
 {
     this->_host = host;
 }
 
-void    Server::setPort(int port)
+void    ServerConfig::setPort(int port)
 {
     this->_port = port;
 }
 
-void    Server::setListen(const std::string& listen)
+void    ServerConfig::setListen(const std::string& listen)
 {
     this->_listen = listen;
 }
 
-void    Server::setRoot(const std::string& root)
+void    ServerConfig::setRoot(const std::string& root)
 {
     this->_root = root;
 }
 
-void    Server::addErrorPage(int key, std::string value)
+void    ServerConfig::addErrorPage(int key, std::string value)
 {
     this->_errorPages[key] = value;
 }
 
-void    Server::addLocation(Location* location)
+void    ServerConfig::addLocation(Location* location)
 {
     this->_locations.push_back(location);
 }
 
-std::string Server::getName() const
+std::string ServerConfig::getName() const
 {
     // if (this->hasName() == false)
     //     throw DataNotFoundException();
     return (this->_name);
 }
 
-std::string Server::getHost() const
+std::string ServerConfig::getHost() const
 {
     // if (this->hasHost() == false)
     //     throw DataNotFoundException();
     return (this->_host);
 }
 
-int Server::getPort() const
+int ServerConfig::getPort() const
 {
     // if (this->hasPort() == false)
     //     throw DataNotFoundException();
     return (this->_port);
 }
 
-std::string Server::getListen() const
+std::string ServerConfig::getListen() const
 {
     // if (this->hasListen() == false)
     //     throw DataNotFoundException();
     return (this->_listen);
 }
 
-std::string Server::getRoot() const
+std::string ServerConfig::getRoot() const
 {
     // if (this->hasRoot() == false)
     //     throw DataNotFoundException();
     return (this->_root);
 }
 
-std::map<int, std::string>    Server::getErrorPages() const
+std::map<int, std::string>    ServerConfig::getErrorPages() const
 {
     // if (this->hasErrorPages() == false)
     //     throw DataNotFoundException(); 
     return (this->_errorPages);
 }
 
-std::vector<Location*>   Server::getLocations() const
+std::vector<Location*>   ServerConfig::getLocations() const
 {
     // if (this->hasLocations() == false)
     //     throw DataNotFoundException();
     return (this->_locations);
 }
 
-bool    Server::hasName() const
+bool    ServerConfig::hasName() const
 {
     if (this->_name.empty())
         return (false);
     return (true);
 }
 
-bool    Server::hasHost() const
+bool    ServerConfig::hasHost() const
 {
     if (this->_host.empty())
         return (false);
     return (true);
 }
 
-bool    Server::hasPort() const
+bool    ServerConfig::hasPort() const
 {
     if (this->_port == -1)
         return (false);
     return (true);
 }
 
-bool    Server::hasListen() const
+bool    ServerConfig::hasListen() const
 {
     if (this->_listen.empty())
         return (false);
     return (true);
 }
 
-bool    Server::hasRoot() const
+bool    ServerConfig::hasRoot() const
 {
     if (this->_root.empty())
         return (false);
     return (true);
 }
 
-bool    Server::hasErrorPages() const
+bool    ServerConfig::hasErrorPages() const
 {
     if (this->_errorPages.size() == 0)
         return (false);
     return (true);
 }
 
-bool    Server::hasLocations() const
+bool    ServerConfig::hasLocations() const
 {
     if (this->_locations.size() == 0)
         return (false);
     return (true);
 }
 
-size_t  Server::errPagesSize() const
+size_t  ServerConfig::errPagesSize() const
 {
     return (this->_errorPages.size());
 }
 
-size_t  Server::locationSize() const
+size_t  ServerConfig::locationSize() const
 {
     return (this->_locations.size());
 }
 
-const char* Server::DataNotFoundException::what() const throw()
+const char* ServerConfig::DataNotFoundException::what() const throw()
 {
     return ("Data does not exist.");
 }
 
-std::ostream	&operator<<(std::ostream& os, const Server& serv)
+const Location* ServerConfig::matchLocation(const std::string& path)
+{
+    std::vector<Location*>::iterator it = this->_locations.begin();
+
+    while (it != this->_locations.end())
+    {
+        if ((*it)->getPath() == path)
+            return (*it);
+        it++;
+    }
+    return (NULL);
+}
+
+std::ostream	&operator<<(std::ostream& os, const ServerConfig& serv)
 {
     os << "Server Settings: " << std::endl;
     os << "  name: " << serv.getName() << "\n";

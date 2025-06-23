@@ -27,7 +27,7 @@ class	FileParser
 		std::stack<ParseContext>	_contextStack;
         
         Config                      _config;
-        Server*                     _currentServer;
+        ServerConfig*               _currentServer;
         Location*                   _currentLocation;
 
 		FileParser();

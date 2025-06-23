@@ -4,7 +4,7 @@ Config::Config()
 {
     this->_fileName = "default";
     this->_clientMaxBodySize = 0;
-    this->_servers = std::vector<Server> ();
+    this->_servers = std::vector<ServerConfig> ();
     this->_validated = true;
     this->_validateErrMsgs = std::vector<std::string> ();
 }
@@ -13,7 +13,7 @@ Config::Config(char *fileName)
 {
     this->_fileName = fileName;
     this->_clientMaxBodySize = 0;
-    this->_servers = std::vector<Server> ();
+    this->_servers = std::vector<ServerConfig> ();
     this->_validated = true;
     this->_validateErrMsgs = std::vector<std::string> ();
 }
@@ -47,7 +47,7 @@ void    Config::setClientMaxBodySize(int clientMaxBodySize)
     this->_clientMaxBodySize = clientMaxBodySize;
 }
 
-void    Config::addServer(Server server)
+void    Config::addServer(ServerConfig server)
 {
     this->_servers.push_back(server);
 }
@@ -62,7 +62,7 @@ int Config::getClientMaxBodySize() const
     return (this->_clientMaxBodySize);
 }
 
-const std::vector<Server> &Config::getServers() const
+const std::vector<ServerConfig> &Config::getServers() const
 {
     return (this->_servers);
 }
@@ -112,7 +112,7 @@ bool    Config::validateServers()
 
 }
 
-bool    Config::validateServer(Server& server, int idx)
+bool    Config::validateServer(ServerConfig& server, int idx)
 {
     bool    isVal = true;
     std::ostringstream  ss;
@@ -164,7 +164,7 @@ bool    Config::validateServer(Server& server, int idx)
     return (isVal);
 }
 
-bool    Config::validateLocations(Server& server, int idx)
+bool    Config::validateLocations(ServerConfig& server, int idx)
 {
     bool    isVal = true;
     (void) server;
