@@ -18,8 +18,22 @@ Location&   Location::operator=(const Location& rhs)
 {
     if (this != &rhs)
     {
-        this->_locType = rhs.getType();
-        this->_locations = rhs.getLocations();
+        for (std::vector<Location*>::iterator it = this->_locations.begin(); \
+                it != this->_locations.end(); it++)
+            delete *it;
+        this->_locations.clear();
+        
+        const std::vector<Location*>& rhsLocations = rhs.getLocations();
+        for (std::vector<Location*>::const_iterator it = rhsLocations.begin(); \
+                it != rhsLocations.end(); ++it)
+        {
+            if (*it != NULL)
+            {
+                this->_locations.push_back((*it)->clone());
+            }
+        }
+
+        this->_locType = rhs.getType();                                             
         this->_path = rhs.getPath();
         this->_clientMaxBodySize = rhs.getClientMaxBodySize();
         this->_root = rhs.getRoot();
@@ -34,9 +48,13 @@ Location::~Location()
 {
     if (this->_locations.size() > 0)
     {
-        for (std::vector<Location *>::iterator it = _locations.begin();
-                it != _locations.end(); it++)
+        for (std::vector<Location *>::iterator it = this->_locations.begin();
+                it != this->_locations.end(); it++)
+        {
             delete *it;
+            *it = NULL;
+        }
+        this->_locations.clear();
     }
 }
 

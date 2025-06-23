@@ -9,32 +9,61 @@ ServerConfig::ServerConfig()
 
 ServerConfig::ServerConfig(const ServerConfig &rhs)
 {
-    *this = rhs;
+    this->_port = rhs.getPort();
+    this->_host = rhs.getHost();
+    this->_listen = rhs.getListen();
+    this->_root = rhs.getRoot();
+    this->_name = rhs.getName();
+    this->_errorPages = rhs.getErrorPages();
+    
+    const std::vector<Location*>& rhsLocations = rhs.getLocations();
+    for (std::vector<Location*>::const_iterator it = rhsLocations.begin();
+         it != rhsLocations.end(); ++it)
+    {
+        if (*it != NULL)
+            _locations.push_back((*it)->clone());
+    }
 }
 
 ServerConfig& ServerConfig::operator=(const ServerConfig &rhs)
 {
     if (this != &rhs)
     {
-        this->_errorPages = rhs.getErrorPages();
-        this->_locations = rhs.getLocations();
-        this->_host = rhs.getHost();
-        this->_listen = rhs.getListen();
-        this->_port = rhs.getPort();
-        this->_root = rhs.getRoot();
-        this->_name = rhs.getName();
-
+        for (std::vector<Location*>::iterator it = _locations.begin(); \
+             it != _locations.end(); ++it)
+            delete *it;
+        _locations.clear();
+        
+        // 새로운 Location들 깊은 복사
+        const std::vector<Location*>& rhsLocations = rhs.getLocations();
+        for (std::vector<Location*>::const_iterator it = rhsLocations.begin();
+             it != rhsLocations.end(); ++it)
+        {
+            if (*it != NULL) {
+                _locations.push_back((*it)->clone());
+            }
+        }
+        
+        // 나머지 멤버들 복사
+        _errorPages = rhs._errorPages;
+        _host = rhs._host;
+        _listen = rhs._listen;
+        _port = rhs._port;
+        _root = rhs._root;
+        _name = rhs._name;
     }
     return (*this);
 }
 
 ServerConfig::~ServerConfig()
 {
-    // for (std::vector<Location*>::iterator it = _locations.begin(); 
-    //          it != _locations.end(); ++it) 
-    // {
-    //     delete *it;
-    // }
+    for (std::vector<Location*>::iterator it = _locations.begin(); \
+        it != _locations.end(); ++it)
+    {
+        delete *it;
+        *it = NULL;
+    }
+    this->_locations.clear();
 }
 
 void    ServerConfig::setName(const std::string& name)
@@ -183,6 +212,19 @@ size_t  ServerConfig::locationSize() const
 const char* ServerConfig::DataNotFoundException::what() const throw()
 {
     return ("Data does not exist.");
+}
+
+const Location* ServerConfig::matchLocation(const std::string& path)
+{
+    std::vector<Location*>::iterator it = this->_locations.begin();
+
+    while (it != this->_locations.end())
+    {
+        if ((*it)->getPath() == path)
+            return (*it);
+        it++;
+    }
+    return (NULL);
 }
 
 std::ostream	&operator<<(std::ostream& os, const ServerConfig& serv)

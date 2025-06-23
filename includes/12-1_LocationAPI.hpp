@@ -15,5 +15,5 @@ class LocationAPI: public Location
         void                        addReturn(int key, std::string val);
         std::map<int, std::string>  getReturn() const;
         bool                        hasReturn() const;
-
+        virtual LocationAPI*        clone() const;
 };

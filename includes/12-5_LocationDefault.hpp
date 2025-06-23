@@ -10,4 +10,6 @@ class LocationDefault: public Location
         LocationDefault(const LocationDefault& rhs);
         LocationDefault&    operator=(const LocationDefault& rhs);
         ~LocationDefault();
+
+        virtual LocationDefault*    clone() const;
 };

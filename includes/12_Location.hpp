@@ -30,6 +30,8 @@ class Location
         Location&   operator=(const Location& rhs);
         virtual ~Location();
 
+        virtual Location* clone() const = 0;
+        
         // Setters
         void    setPath(std::string path);
         void    setClientMaxBodySize(int cmbs);

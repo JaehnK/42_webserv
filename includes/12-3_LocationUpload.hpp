@@ -19,8 +19,10 @@ class LocationUpload: public Location
         void        setClientBodyFileOnly(bool cbfo);
 
         std::string getUploadStore() const;
-        std::string setClientBodyTempPath() const;
+        std::string getClientBodyTempPath() const;
         bool        getClientBodyFileOnly() const;
 
         bool        hasUploadStore() const;
+
+        virtual LocationUpload* clone() const;
 };

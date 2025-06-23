@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <regex.h>
 #include <unistd.h>
@@ -20,7 +21,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <stack>
 #include <map>
+#include <set>
 #include <memory>
 #include <cstring>
 #include "10_Config.hpp"
