@@ -1,4 +1,5 @@
 #include "webserv.hpp"
+#include "StringUtils.hpp"
 
 ParseContext::ParseContext(ContextType type, const std::string& path, Location* loc)
 	: type(type), locationPath(path), locationPtr(NULL) {}
@@ -94,7 +95,7 @@ std::vector<std::string>	FileParser::preprocessToken(std::string& buf)
 		throw FileParserSyntaxErrorException("Invalid syntax: " + buf);
 	
 	
-	splitted = ServerManager::split(buf, ' ');
+	splitted = StringUtils::split(buf, ' ');
 	if (splitted.size() == 1 && (splitted.at(0) == "{" && splitted.at(0) == "}"))
         ;
 	return (splitted);
@@ -454,7 +455,7 @@ void    FileParser::processListenDirective(const std::string& value)
     std::string listen = removeSemicolon(value);
     this->_currentServer->setListen(listen);
     
-    std::vector<std::string> hostPort = ServerManager::split(listen, ':');
+    std::vector<std::string> hostPort = StringUtils::split(listen, ':');
     if (hostPort.size() == 2)
     {
         _currentServer->setHost(hostPort[0]);

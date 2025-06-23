@@ -11,7 +11,7 @@ INCLUDE_DIR = ./includes
 HEADERS = webserv.hpp \
 		  00_ServerManager.hpp \
 		  10_Config.hpp \
-		  11_Server.hpp \
+		  11_ServerConfig.hpp \
 		  12_Location.hpp \
 		  12-1_LocationAPI.hpp \
 		  12-2_LocationDownload.hpp \
@@ -19,17 +19,11 @@ HEADERS = webserv.hpp \
 		  12-4_LocationCGI.hpp \
 		  12-5_LocationDefault.hpp \
 		  13_FileParser.hpp \
-		  20_HttpServer.hpp \
-		  21_HttpRequest.hpp \
-		  22_HttpResponse.hpp \
-		  23_ClientData.hpp \
-		  Epoll.hpp \
-		  ServerSocket.hpp \
 
 SRCS = webserv.cpp \
        00_ServerManager.cpp \
        10_Config.cpp \
-       11_Server.cpp \
+       11_ServerConfig.cpp \
 	   12_Location.cpp \
 	   12-1_LocationAPI.cpp \
 	   12-2_LocationDownload.cpp \
@@ -37,12 +31,6 @@ SRCS = webserv.cpp \
 	   12-4_LocationCGI.cpp \
 	   12-5_LocationDefault.cpp \
 	   13_FileParser.cpp \
-	   20_HttpServer.cpp \
-	   21_HttpRequest.cpp \
-	   22_HttpResponse.cpp \
-	   23_ClientData.cpp \
-	   Epoll.cpp \
-	   ServerSocket.cpp \
 
 
 SRCS_DIR = ./srcs

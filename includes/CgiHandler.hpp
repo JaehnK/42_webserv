@@ -9,4 +9,3 @@ class CgiHandler : public RequestHandler {
         virtual int     handleRequest(ClientConnection& conn, const Location* location);
         virtual bool    canHandle(const HttpRequest& request, const Location* location);
 };
-    
