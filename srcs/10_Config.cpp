@@ -76,13 +76,13 @@ bool    Config::validate()
 {
     if (this->_clientMaxBodySize < 1)
     {
-        addValidateMsg("Global: client_max_body_size not defined, using default: 1MB");
+        std::cout << "Global: client_max_body_size not defined, using default: 1MB" << std::endl;
         this->_clientMaxBodySize = 1048576; // 1mb 값
     }
 
     if (this->_servers.empty())
     {
-        addValidateMsg("Global: No Servers Configured");
+        std::cout << "Global: No Servers Configured" << std::endl;
         return (false);
     }
     
@@ -101,66 +101,14 @@ bool    Config::validateServers()
         listen = this->_servers[i].getListen();
         if (seenListens.find(listen) != seenListens.end())
         {
-            addValidateMsg("Server: Duplicated Listens");
+            std::cout << "Server: Duplicated Listens" << std::endl;
             isVal = false;
         }
         seenListens.insert(listen);
 
-        if (!validateServer(this->_servers[i], i))
+        if (!this->_servers[i].validateServer(i))
             isVal = false;
     }
-
-}
-
-bool    Config::validateServer(ServerConfig& server, int idx)
-{
-    bool    isVal = true;
-    std::ostringstream  ss;
-    std::string         context;
-    
-    ss << "Server[" << idx << "]: ";
-    context = ss.str();
-
-    if (!server.hasHost() || server.getHost().empty())
-    {
-        server.setHost("0.0.0.0");
-        addValidateMsg(context + "host not defined, using default 0.0.0.0");
-    }
-    
-    if (!server.hasPort() || server.getPort() <= 0)
-    {
-        server.setPort(80);
-        addValidateMsg(context + "port not defined, using default 0.0.0.0");
-    }
-    else if (server.getPort() > 65535)
-    {
-        addValidateMsg(context + "invalid port number");
-    }
-
-    if (!server.hasName() || server.getName().empty())
-    {
-        server.setName("_");
-        addValidateMsg(context + "server_name not defind, using default _");
-    }
-    
-    if (!server.hasRoot() || server.getRoot().empty())
-    {
-        server.setRoot("/var/www");
-        addValidateMsg(context + "root not defined, using default var/www");
-    }
-    else
-    {
-        struct stat st;
-        if (stat(server.getRoot().c_str(), &st) != 0)
-        {
-            addValidateMsg(context + "invalid root directory");
-            isVal = false;
-        }
-    }
-
-    if (!validateLocations(server, idx))
-        isVal = false;
-    
     return (isVal);
 }
 

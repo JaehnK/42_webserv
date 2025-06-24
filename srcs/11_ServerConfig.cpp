@@ -227,9 +227,93 @@ const Location* ServerConfig::matchLocation(const std::string& path)
     return (NULL);
 }
 
+bool    ServerConfig::validateServer(int idx)
+{
+    bool    isVal = true;
+    std::ostringstream  ss;
+    std::string         context;
+    
+    ss << "Server[" << idx << "]: ";
+    context = ss.str();
+
+    if (!this->hasHost() || this->getHost().empty())
+    {
+        this->setHost("0.0.0.0");
+        std::cout << context + "host not defined, using default 0.0.0.0" << std::endl;
+    }
+    
+    if (!this->hasPort() || this->getPort() <= 0)
+    {
+        this->setPort(80);
+        std::cout << context + "port not defined, using default 80" << std::endl;
+    }
+    else if (this->getPort() > 65535)
+    {
+        std::cout << context + "invalid port number" << std::endl;
+    }
+
+    if (!this->hasName() || this->getName().empty())
+    {
+        this->setName("_");
+        std::cout << context + "server_name not defind, using default _" << std::endl;
+    }
+    
+    if (!this->hasRoot() || this->getRoot().empty())
+    {
+        this->setRoot("/var/www");
+        std::cout << context + "root not defined, using default var/www" << std::endl;
+    }
+    else
+    {
+        struct stat st;
+        if (stat(this->getRoot().c_str(), &st) != 0)
+        {
+            std::cout << context + "invalid root directory" << std::endl;
+            isVal = false;
+        }
+    }
+
+    if (!validateLocations(idx))
+        isVal = false;
+    
+    return (isVal);
+
+}
+
+bool    ServerConfig::validateLocations(int idx)
+{
+    bool                     isVal = true;
+    std::set<std::string>    seenPath;
+    
+    if (this->locationSize() == 0)
+    {
+        std::cerr << "Server[ " << idx << " ]: No locations defined" << std::endl; 
+        isVal = false;
+        return (isVal);
+    }
+    
+    std::vector<Location*>::iterator it = this->_locations.begin();
+    while (it != this->_locations.end())
+    {
+        if (seenPath.find((*it)->getPath()) != seenPath.end())
+        {
+            std::cerr << "Server[ " << idx << " ]:Duplicated Location Path" << std::endl;
+            isVal = false;
+        }
+
+        if (!(*it)->validateLocation())
+            isVal = false;
+        seenPath.insert((*it)->getPath());
+        it++;
+    }
+    return (isVal);
+}
+
+
+
 std::ostream	&operator<<(std::ostream& os, const ServerConfig& serv)
 {
-    os << "Server Settings: " << std::endl;
+    os << "Server Settings: " << "\n";
     os << "  name: " << serv.getName() << "\n";
     os << "  host: " << serv.getHost() << "\n";
     os << "  port: " << serv.getPort() << "\n";

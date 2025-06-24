@@ -11,7 +11,7 @@ class ServerConfig
         std::string                 _listen;
         std::string                 _root;
         std::map<int, std::string>  _errorPages;
-        std::vector<Location*>       _locations;
+        std::vector<Location*>      _locations;
         
     public:
         ServerConfig();
@@ -49,8 +49,12 @@ class ServerConfig
         // size
         size_t  errPagesSize() const;
         size_t  locationSize() const;
+
         const Location* matchLocation(const std::string& path);
-        
+        bool            validateServer(int idx);
+        bool            validateLocations(int idx);
+
+    
         class DataNotFoundException: public std::exception
         {
             public:
